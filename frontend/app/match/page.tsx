@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import axios from 'axios'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 
 interface BirthForm {
   name: string
@@ -50,7 +49,7 @@ export default function MatchPage() {
     setResult(null)
     setInterpretation('')
     try {
-      const { data } = await axios.post(`${API}/api/match-charts`, {
+      const { data } = await axios.post(`/api/match-charts`, {
         name1: form1.name, birth_date1: form1.birth_date,
         birth_time1: form1.birth_time, birth_place1: form1.birth_place,
         name2: form2.name, birth_date2: form2.birth_date,
@@ -69,7 +68,7 @@ export default function MatchPage() {
     if (!result) return
     setAiLoading(true)
     try {
-      const { data } = await axios.post(`${API}/api/match-interpret`, result)
+      const { data } = await axios.post(`/api/match-interpret`, result)
       setInterpretation(data.interpretation)
     } finally {
       setAiLoading(false)

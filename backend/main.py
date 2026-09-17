@@ -1,5 +1,6 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 import os
@@ -12,14 +13,15 @@ from vision import parse_kundali_image
 from matching import calculate_match
 from ai_agent import (
     interpret_full_chart, interpret_placement,
-    chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match
+    chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
+    stream_full_chart, stream_placement, stream_chat,
 )
 
 app = FastAPI(title="Kundali API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://*.railway.app", "https://*.vercel.app"],
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -92,27 +94,23 @@ async def parse_chart(file: UploadFile = File(...)):
 
 @app.post("/api/interpret-full")
 def full_interpretation(chart_data: dict):
-    try:
-        return {"interpretation": interpret_full_chart(chart_data)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return StreamingResponse(stream_full_chart(chart_data), media_type="text/plain; charset=utf-8")
 
 
 @app.post("/api/interpret-placement")
 def placement_interpretation(req: InterpretRequest):
-    try:
-        return {"interpretation": interpret_placement(req.planet, req.sign, req.house, req.chart_data)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return StreamingResponse(
+        stream_placement(req.planet, req.sign, req.house, req.chart_data),
+        media_type="text/plain; charset=utf-8",
+    )
 
 
 @app.post("/api/chat")
 def chat(req: ChatMessage):
-    try:
-        reply = chat_with_chart(req.message, req.chart_data, req.history)
-        return {"reply": reply}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    return StreamingResponse(
+        stream_chat(req.message, req.chart_data, req.history),
+        media_type="text/plain; charset=utf-8",
+    )
 
 
 @app.get("/api/lessons")

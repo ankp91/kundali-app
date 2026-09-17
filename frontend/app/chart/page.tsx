@@ -38,7 +38,7 @@ export default function ChartPage() {
         <h1 className="text-2xl font-bold text-gold-400">
           {chart.name as string || 'Kundali'} — Birth Chart
         </h1>
-        {chart.birth_info && (
+        {!!chart.birth_info && (
           <span className="text-gray-400 text-sm">
             {(chart.birth_info as { date: string; place: string }).date} · {(chart.birth_info as { date: string; place: string }).place}
           </span>

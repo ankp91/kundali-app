@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 
 interface Lesson { id: string; title: string; icon: string; description: string }
 interface LessonDetail { id: string; title: string; topics: object[] }
@@ -15,11 +14,11 @@ export default function LearnPage() {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
 
   useEffect(() => {
-    axios.get(`${API}/api/lessons`).then(r => setLessons(r.data))
+    axios.get(`/api/lessons`).then(r => setLessons(r.data))
   }, [])
 
   const openLesson = async (id: string) => {
-    const { data } = await axios.get(`${API}/api/lessons/${id}`)
+    const { data } = await axios.get(`/api/lessons/${id}`)
     setSelected(data)
     setExplanations({})
     setExpandedIdx(null)
@@ -30,7 +29,7 @@ export default function LearnPage() {
     setExpandedIdx(idx)
     setLoading(true)
     const chart = sessionStorage.getItem('kundali')
-    const { data } = await axios.post(`${API}/api/lessons/explain`, {
+    const { data } = await axios.post(`/api/lessons/explain`, {
       lesson_id: selected?.id,
       topic,
       chart_data: chart ? JSON.parse(chart) : null,

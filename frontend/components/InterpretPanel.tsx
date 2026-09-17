@@ -1,8 +1,6 @@
 'use client'
 import { useState } from 'react'
-import axios from 'axios'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 
 interface Props {
   chartData: object
@@ -11,15 +9,40 @@ interface Props {
   planets?: Record<string, { sign: string; house: number; degree: number }>
 }
 
+async function readStream(url: string, body: object, onChunk: (t: string) => void) {
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.detail || `Error ${res.status}`)
+  }
+  const reader = res.body!.getReader()
+  const dec = new TextDecoder()
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    onChunk(dec.decode(value, { stream: true }))
+  }
+}
+
 export default function InterpretPanel({ chartData, selectedPlanet, planets }: Props) {
   const [interpretation, setInterpretation] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const fetchFull = async () => {
     setLoading(true)
+    setError('')
+    setInterpretation('')
     try {
-      const { data } = await axios.post(`${API}/api/interpret-full`, chartData)
-      setInterpretation(data.interpretation)
+      await readStream('/api/interpret-full', chartData, chunk =>
+        setInterpretation(prev => prev + chunk)
+      )
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Failed to get interpretation. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -29,14 +52,14 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
     if (!selectedPlanet || !planets?.[selectedPlanet]) return
     const pd = planets[selectedPlanet]
     setLoading(true)
+    setError('')
+    setInterpretation('')
     try {
-      const { data } = await axios.post(`${API}/api/interpret-placement`, {
-        planet: selectedPlanet,
-        sign: pd.sign,
-        house: pd.house,
-        chart_data: chartData,
-      })
-      setInterpretation(data.interpretation)
+      await readStream('/api/interpret-placement', {
+        planet: selectedPlanet, sign: pd.sign, house: pd.house, chart_data: chartData,
+      }, chunk => setInterpretation(prev => prev + chunk))
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'Failed to get interpretation. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -63,15 +86,20 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
           </button>
         )}
       </div>
-      {loading && (
+      {loading && !interpretation && (
         <div className="text-saffron-400 text-sm animate-pulse">Jyotish Guru is reading your chart...</div>
       )}
-      {interpretation && !loading && (
-        <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-line max-h-80 overflow-y-auto pr-2">
-          {interpretation}
+      {error && (
+        <div className="text-red-400 text-sm bg-red-900/20 border border-red-700/30 rounded-lg p-3 mt-2">
+          {error}
         </div>
       )}
-      {!interpretation && !loading && (
+      {interpretation && (
+        <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-line max-h-80 overflow-y-auto pr-2">
+          {interpretation}{loading && <span className="animate-pulse">▍</span>}
+        </div>
+      )}
+      {!interpretation && !error && !loading && (
         <p className="text-gray-500 text-sm">Click a planet in the table or request a full chart reading above.</p>
       )}
     </div>

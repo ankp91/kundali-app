@@ -3,10 +3,31 @@ import os
 from typing import Optional
 from datetime import datetime
 
-client = anthropic.Anthropic(
-    api_key=os.environ.get("ANTHROPIC_API_KEY"),
-    base_url=os.environ.get("ANTHROPIC_BASE_URL") or None,
-)
+MODEL = "claude-sonnet-4-6"
+
+# Prefer the personal direct Anthropic key; fall back to the work key
+_api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+
+
+def _make_client() -> anthropic.Anthropic:
+    # Explicitly set base_url to bypass ANTHROPIC_BASE_URL env var (Salesforce proxy)
+    return anthropic.Anthropic(api_key=_api_key, base_url="https://api.anthropic.com")
+
+
+def _call_claude(system: str, messages: list, max_tokens: int) -> str:
+    resp = _make_client().messages.create(
+        model=MODEL, max_tokens=max_tokens, system=system, messages=messages
+    )
+    return resp.content[0].text
+
+
+def _stream_claude(system: str, messages: list, max_tokens: int):
+    """Yields text chunks as they arrive from Anthropic."""
+    with _make_client().messages.stream(
+        model=MODEL, max_tokens=max_tokens, system=system, messages=messages
+    ) as stream:
+        for chunk in stream.text_stream:
+            yield chunk
 
 SYSTEM_INTERPRET = """You are Jyotish Guru, an expert Vedic astrologer with deep mastery of TWO traditions — Parashari Jyotish AND Bhrigu Samhita. Always weave both frameworks into your readings.
 
@@ -76,8 +97,8 @@ Apply these principles in every reading:
 - For monthly/yearly analysis: always state which Jupiter transit is active and whether Jupiter is approaching the Bhrigu Bindu"""
 
 
-def interpret_placement(planet: str, sign: str, house: int, chart_context: dict) -> str:
-    msg = f"""Interpret {planet} in {sign} in house {house}.
+def _placement_msg(planet: str, sign: str, house: int, chart_context: dict) -> str:
+    return f"""Interpret {planet} in {sign} in house {house}.
 
 Full chart context:
 Ascendant: {chart_context.get('ascendant', {}).get('sign', 'Unknown')}
@@ -89,13 +110,13 @@ Give a 3-4 paragraph interpretation covering:
 3. What the house placement indicates for this person's life
 4. Any notable yogas or aspects to watch"""
 
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=1500,
-        system=SYSTEM_INTERPRET,
-        messages=[{"role": "user", "content": msg}]
-    )
-    return resp.content[0].text
+
+def interpret_placement(planet: str, sign: str, house: int, chart_context: dict) -> str:
+    return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": _placement_msg(planet, sign, house, chart_context)}], 1500)
+
+
+def stream_placement(planet: str, sign: str, house: int, chart_context: dict):
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": _placement_msg(planet, sign, house, chart_context)}], 1500)
 
 
 def interpret_full_chart(chart_data: dict) -> str:
@@ -144,13 +165,47 @@ Cover:
 
 Be warm, constructive and insightful. About 600 words."""
 
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        system=SYSTEM_INTERPRET,
-        messages=[{"role": "user", "content": msg}]
-    )
-    return resp.content[0].text
+    return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
+
+
+def stream_full_chart(chart_data: dict):
+    asc = chart_data.get("ascendant", {})
+    planets = chart_data.get("planets", {})
+    dashas = chart_data.get("dashas", [])
+    birth_info = chart_data.get("birth_info", {})
+    bb = chart_data.get("bhrigu_bindu", {})
+    planet_summary = "\n".join([
+        f"- {p}: {d['sign']} (House {d['house']}, {d['degree']}°){' [R]' if d.get('is_retrograde') else ''}"
+        for p, d in planets.items()
+    ])
+    dasha_summary = ""
+    if dashas:
+        dasha_summary = "\nVimshottari Dasha sequence (full 120-year cycle):\n" + "\n".join([
+            f"{'→ ' if d.get('is_current') else '  '}{d['lord']} Dasha ({d['years']} yrs): {d['start']} – {d['end']}{' ← CURRENT' if d.get('is_current') else ''}"
+            for d in dashas
+        ])
+    today_str = datetime.now().strftime("%B %d, %Y")
+    birth_line = f"\nBirth: {birth_info.get('date')} {birth_info.get('time')} at {birth_info.get('place')} (Timezone: {birth_info.get('timezone')})" if birth_info else ""
+    bb_line = f"\nBhrigu Bindu: {bb.get('sign')} (House {bb.get('house')}, {bb.get('degree')}°)" if bb else ""
+    msg = f"""Give a comprehensive kundali reading for this chart using BOTH Parashari and Bhrigu Samhita frameworks.
+Today's date: {today_str}
+{birth_line}
+Ascendant (Lagna): {asc.get('sign')} at {asc.get('degree')}°
+{bb_line}
+Planetary Positions:
+{planet_summary}
+{dasha_summary}
+
+Cover:
+1. Personality and life path (from Lagna) — Parashari + Bhrigu perspective
+2. Key strengths in the chart
+3. Areas requiring attention or growth (include karmic patterns from Bhrigu)
+4. Notable yogas AND karmic indicators (Rahu-Ketu axis, 12th house principle)
+5. Current dasha analysis with Jupiter transit timing (Bhrigu Nadi) — what is Jupiter transiting right now and what does it mean?
+6. Bhrigu Bindu — which house/sign it falls in and when Jupiter will next transit it
+
+Be warm, constructive and insightful. About 600 words."""
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
 def chat_with_chart(message: str, chart_data: dict, history: list) -> str:
@@ -182,14 +237,33 @@ Ascendant: {asc.get('sign')} {asc.get('degree')}°
 Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu."""
 
     messages = history + [{"role": "user", "content": message}]
+    return _call_claude(system, messages, 2000)
 
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        system=system,
-        messages=messages
-    )
-    return resp.content[0].text
+
+def stream_chat(message: str, chart_data: dict, history: list):
+    asc = chart_data.get("ascendant", {})
+    planets = chart_data.get("planets", {})
+    planet_summary = "\n".join([f"{p}: {d['sign']} House {d['house']}" for p, d in planets.items()])
+    dashas = chart_data.get("dashas", [])
+    birth_info = chart_data.get("birth_info", {})
+    current_dasha = next((d for d in dashas if d.get("is_current")), None)
+    dasha_line = f"\nCurrent Dasha: {current_dasha['lord']} ({current_dasha['start']} – {current_dasha['end']})" if current_dasha else ""
+    birth_line = f"\nBirth: {birth_info.get('date')} {birth_info.get('time')} at {birth_info.get('place')}" if birth_info else ""
+    today_str = datetime.now().strftime("%B %d, %Y")
+    bb = chart_data.get("bhrigu_bindu", {})
+    bb_line = f"\nBhrigu Bindu: {bb.get('sign')} House {bb.get('house')} at {bb.get('degree')}°" if bb else ""
+    system = f"""{SYSTEM_INTERPRET}
+
+TODAY'S DATE: {today_str}
+Always use this date when answering questions about current transits, current month, next month, or any time-sensitive analysis. Never use a past date.
+
+The user's kundali:{birth_line}
+Ascendant: {asc.get('sign')} {asc.get('degree')}°
+{planet_summary}{dasha_line}{bb_line}
+
+Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu."""
+    messages = history + [{"role": "user", "content": message}]
+    return _stream_claude(system, messages, 2000)
 
 
 LESSONS = [
@@ -510,13 +584,7 @@ Requirements:
 - If chart context provided, relate it to the actual chart
 - End with one practical insight or takeaway"""
 
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        system=SYSTEM_INTERPRET,
-        messages=[{"role": "user", "content": msg}]
-    )
-    return resp.content[0].text
+    return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
 def interpret_match(match_data: dict) -> str:
@@ -564,10 +632,4 @@ Cover:
 
 Be warm, honest, and constructive. About 500 words."""
 
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        system=SYSTEM_INTERPRET,
-        messages=[{"role": "user", "content": msg}]
-    )
-    return resp.content[0].text
+    return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)

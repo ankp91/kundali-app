@@ -2,7 +2,6 @@
 import { useState } from 'react'
 import axios from 'axios'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 
 interface Props { onChart: (data: object) => void }
 
@@ -16,7 +15,7 @@ export default function BirthForm({ onChart }: Props) {
     setLoading(true)
     setError('')
     try {
-      const { data } = await axios.post(`${API}/api/generate-chart`, form)
+      const { data } = await axios.post(`/api/generate-chart`, form)
       onChart(data)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail

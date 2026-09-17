@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 
 interface Props { onChart: (data: object) => void }
 
@@ -21,13 +20,17 @@ export default function UploadForm({ onChart }: Props) {
     try {
       const fd = new FormData()
       fd.append('file', file)
-      const { data } = await axios.post(`${API}/api/parse-chart`, fd, {
+      const { data } = await axios.post(`/api/parse-chart`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
       onChart(data)
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(msg || 'Failed to parse chart. Try a clearer image.')
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || ''
+      if (msg.includes('personal Anthropic API key') || msg.includes('proxy')) {
+        setError('Upload needs a personal Anthropic API key (free at console.anthropic.com). Add it as ANTHROPIC_VISION_API_KEY in backend/.env — or use "Generate from birth details" instead.')
+      } else {
+        setError(msg || 'Failed to parse chart. Try a clearer image.')
+      }
     } finally {
       setLoading(false)
     }

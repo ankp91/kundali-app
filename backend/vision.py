@@ -5,10 +5,11 @@ import os
 
 
 def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
-    client = anthropic.Anthropic(
-        api_key=os.environ.get("ANTHROPIC_API_KEY"),
-        base_url=os.environ.get("ANTHROPIC_BASE_URL") or None,
-    )
+    # Vision requires a direct Anthropic API key — the Salesforce proxy doesn't support image requests.
+    # Check for a separate vision key, fall back to the main key without the proxy base_url.
+    vision_api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+
+    client = anthropic.Anthropic(api_key=vision_api_key)  # No base_url — must hit Anthropic directly
 
     image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
 
@@ -54,24 +55,37 @@ Extract ALL visible information and return a JSON object with this exact structu
 
 If a value is unclear or not visible, use null. Return ONLY valid JSON, no other text."""
 
-    message = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=2000,
-        messages=[{
-            "role": "user",
-            "content": [
-                {
-                    "type": "image",
-                    "source": {
-                        "type": "base64",
-                        "media_type": mime_type,
-                        "data": image_b64,
+    try:
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": mime_type,
+                            "data": image_b64,
+                        },
                     },
-                },
-                {"type": "text", "text": prompt}
-            ],
-        }]
-    )
+                    {"type": "text", "text": prompt}
+                ],
+            }]
+        )
+    except anthropic.AuthenticationError:
+        raise ValueError(
+            "Upload requires a personal Anthropic API key (the work proxy does not support image reading). "
+            "Get a free key at console.anthropic.com and add it as ANTHROPIC_VISION_API_KEY in backend/.env"
+        )
+    except Exception as e:
+        if "model" in str(e).lower() or "endpoint" in str(e).lower() or "bedrock" in str(e).lower():
+            raise ValueError(
+                "Upload requires a personal Anthropic API key (the work proxy does not support image reading). "
+                "Get a free key at console.anthropic.com and add it as ANTHROPIC_VISION_API_KEY in backend/.env"
+            )
+        raise
 
     text = message.content[0].text.strip()
     if text.startswith("```"):

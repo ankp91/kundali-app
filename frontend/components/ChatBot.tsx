@@ -1,8 +1,6 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
-import axios from 'axios'
 
-const API = process.env.NEXT_PUBLIC_API_URL
 
 interface Message { role: 'user' | 'assistant'; content: string }
 
@@ -23,19 +21,38 @@ export default function ChatBot({ chartData }: Props) {
   const send = async () => {
     if (!input.trim() || loading) return
     const userMsg: Message = { role: 'user', content: input }
-    setMessages(prev => [...prev, userMsg])
+    const history = messages.map(m => ({ role: m.role, content: m.content }))
+    setMessages(prev => [...prev, userMsg, { role: 'assistant', content: '' }])
     setInput('')
     setLoading(true)
     try {
-      const history = messages.map(m => ({ role: m.role, content: m.content }))
-      const { data } = await axios.post(`${API}/api/chat`, {
-        message: input,
-        chart_data: chartData,
-        history,
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: input, chart_data: chartData, history }),
       })
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      if (!res.ok) throw new Error('Chat failed')
+      const reader = res.body!.getReader()
+      const dec = new TextDecoder()
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        const chunk = dec.decode(value, { stream: true })
+        setMessages(prev => {
+          const updated = [...prev]
+          updated[updated.length - 1] = {
+            role: 'assistant',
+            content: updated[updated.length - 1].content + chunk,
+          }
+          return updated
+        })
+      }
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Sorry, I could not process that. Try again.' }])
+      setMessages(prev => {
+        const updated = [...prev]
+        updated[updated.length - 1] = { role: 'assistant', content: 'Sorry, I could not process that. Try again.' }
+        return updated
+      })
     } finally {
       setLoading(false)
     }
@@ -58,7 +75,7 @@ export default function ChatBot({ chartData }: Props) {
             </div>
           </div>
         ))}
-        {loading && (
+        {loading && messages[messages.length - 1]?.content === '' && (
           <div className="flex justify-start">
             <div className="bg-deepblue-950 border border-saffron-700/20 rounded-xl px-4 py-2 text-saffron-400 text-sm animate-pulse">
               Jyotish Guru is thinking...
