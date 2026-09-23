@@ -7,6 +7,7 @@ on:
       - 'backend/**'
       - 'Dockerfile'
       - 'fly.toml'
+      - '.dockerignore'
   workflow_dispatch:
 
 jobs:
@@ -17,12 +18,6 @@ jobs:
 
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Create app if it does not exist
-        run: |
-          flyctl apps list | grep -q "kundali-backend" || flyctl apps create kundali-backend --org ankit-purohit-623
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-
       - name: Set API key secret
         run: flyctl secrets set ANTHROPIC_VISION_API_KEY="$ANTHROPIC_VISION_API_KEY" --app kundali-backend
         env:
@@ -30,6 +25,6 @@ jobs:
           ANTHROPIC_VISION_API_KEY: ${{ secrets.ANTHROPIC_VISION_API_KEY }}
 
       - name: Deploy
-        run: flyctl deploy --remote-only --app kundali-backend
+        run: flyctl deploy --app kundali-backend
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
