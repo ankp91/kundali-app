@@ -33,6 +33,34 @@ interface MatchResult {
 
 const emptyForm = (): BirthForm => ({ name: '', birth_date: '', birth_time: '', birth_place: '' })
 
+function BirthInput({ form, setForm, label }: { form: BirthForm; setForm: (f: BirthForm) => void; label: string }) {
+  return (
+    <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
+      <h3 className="text-gold-400 font-bold text-lg mb-4">{label}</h3>
+      <div className="space-y-3">
+        {[
+          { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Name' },
+          { key: 'birth_date', label: 'Date of Birth', type: 'date', placeholder: '' },
+          { key: 'birth_time', label: 'Time of Birth', type: 'time', placeholder: '' },
+          { key: 'birth_place', label: 'Place of Birth', type: 'text', placeholder: 'City, Country' },
+        ].map(f => (
+          <div key={f.key}>
+            <label className="block text-saffron-400 text-xs mb-1">{f.label}</label>
+            <input
+              type={f.type}
+              placeholder={f.placeholder}
+              required
+              value={form[f.key as keyof BirthForm]}
+              onChange={e => setForm({ ...form, [f.key]: e.target.value })}
+              className="w-full bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-400 focus:outline-none"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function MatchPage() {
   const [form1, setForm1] = useState<BirthForm>(emptyForm())
   const [form2, setForm2] = useState<BirthForm>(emptyForm())
@@ -89,32 +117,6 @@ export default function MatchPage() {
     if (pct >= 0.25) return 'bg-orange-500'
     return 'bg-red-500'
   }
-
-  const BirthInput = ({ form, setForm, label }: { form: BirthForm; setForm: (f: BirthForm) => void; label: string }) => (
-    <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
-      <h3 className="text-gold-400 font-bold text-lg mb-4">{label}</h3>
-      <div className="space-y-3">
-        {[
-          { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Name' },
-          { key: 'birth_date', label: 'Date of Birth', type: 'date', placeholder: '' },
-          { key: 'birth_time', label: 'Time of Birth', type: 'time', placeholder: '' },
-          { key: 'birth_place', label: 'Place of Birth', type: 'text', placeholder: 'City, Country' },
-        ].map(f => (
-          <div key={f.key}>
-            <label className="block text-saffron-400 text-xs mb-1">{f.label}</label>
-            <input
-              type={f.type}
-              placeholder={f.placeholder}
-              required
-              value={form[f.key as keyof BirthForm]}
-              onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-              className="w-full bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-400 focus:outline-none"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
