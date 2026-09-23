@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import axios from 'axios'
+import { useLanguage } from '@/components/LanguageProvider'
 
 
 interface BirthForm {
@@ -33,16 +34,21 @@ interface MatchResult {
 
 const emptyForm = (): BirthForm => ({ name: '', birth_date: '', birth_time: '', birth_place: '' })
 
-function BirthInput({ form, setForm, label }: { form: BirthForm; setForm: (f: BirthForm) => void; label: string }) {
+function BirthInput({ form, setForm, label, t }: {
+  form: BirthForm
+  setForm: (f: BirthForm) => void
+  label: string
+  t: { name: string; namePlaceholder: string; date: string; time: string; place: string; placePlaceholder: string }
+}) {
   return (
     <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
       <h3 className="text-gold-400 font-bold text-lg mb-4">{label}</h3>
       <div className="space-y-3">
         {[
-          { key: 'name', label: 'Full Name', type: 'text', placeholder: 'Name' },
-          { key: 'birth_date', label: 'Date of Birth', type: 'date', placeholder: '' },
-          { key: 'birth_time', label: 'Time of Birth', type: 'time', placeholder: '' },
-          { key: 'birth_place', label: 'Place of Birth', type: 'text', placeholder: 'City, Country' },
+          { key: 'name', label: t.name, type: 'text', placeholder: t.namePlaceholder },
+          { key: 'birth_date', label: t.date, type: 'date', placeholder: '' },
+          { key: 'birth_time', label: t.time, type: 'time', placeholder: '' },
+          { key: 'birth_place', label: t.place, type: 'text', placeholder: t.placePlaceholder },
         ].map(f => (
           <div key={f.key}>
             <label className="block text-saffron-400 text-xs mb-1">{f.label}</label>
@@ -69,6 +75,7 @@ export default function MatchPage() {
   const [loading, setLoading] = useState(false)
   const [aiLoading, setAiLoading] = useState(false)
   const [error, setError] = useState('')
+  const { t, lang } = useLanguage()
 
   const calculate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -86,7 +93,7 @@ export default function MatchPage() {
       setResult(data)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(msg || 'Failed to calculate compatibility.')
+      setError(msg || t.match.error)
     } finally {
       setLoading(false)
     }
@@ -96,7 +103,7 @@ export default function MatchPage() {
     if (!result) return
     setAiLoading(true)
     try {
-      const { data } = await axios.post(`/api/match-interpret`, result)
+      const { data } = await axios.post(`/api/match-interpret`, { ...result, language: lang })
       setInterpretation(data.interpretation)
     } finally {
       setAiLoading(false)
@@ -122,14 +129,14 @@ export default function MatchPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="text-center mb-10">
         <div className="text-5xl mb-3">💑</div>
-        <h1 className="text-3xl font-bold text-gold-400 mb-2">Kundali Milan</h1>
-        <p className="text-gray-400">Ashtakoot compatibility matching — 36-point Vedic system</p>
+        <h1 className="text-3xl font-bold text-gold-400 mb-2">{t.match.title}</h1>
+        <p className="text-gray-400">{t.match.subtitle}</p>
       </div>
 
       <form onSubmit={calculate}>
         <div className="grid md:grid-cols-2 gap-6 mb-6">
-          <BirthInput form={form1} setForm={setForm1} label="Person 1" />
-          <BirthInput form={form2} setForm={setForm2} label="Person 2" />
+          <BirthInput form={form1} setForm={setForm1} label={t.match.person1} t={t.match} />
+          <BirthInput form={form2} setForm={setForm2} label={t.match.person2} t={t.match} />
         </div>
         {error && <p className="text-red-400 text-sm mb-4 text-center">{error}</p>}
         <div className="flex justify-center">
@@ -138,25 +145,24 @@ export default function MatchPage() {
             disabled={loading}
             className="bg-saffron-600 hover:bg-saffron-500 disabled:bg-saffron-900 text-white font-bold py-3 px-12 rounded-xl transition text-lg"
           >
-            {loading ? 'Calculating compatibility...' : 'Match Kundalis'}
+            {loading ? t.match.loading : t.match.submit}
           </button>
         </div>
       </form>
 
       {result && (
         <div className="mt-10 space-y-6">
-          {/* Score summary */}
           <div className="bg-deepblue-900 border border-saffron-700/30 rounded-2xl p-8 text-center">
             <div className="flex justify-center gap-12 mb-6">
               <div>
                 <div className="text-gold-400 font-bold text-lg">{result.person1.name}</div>
-                <div className="text-gray-400 text-sm">{result.person1.moon_sign} Moon</div>
+                <div className="text-gray-400 text-sm">{result.person1.moon_sign} {t.match.moonSign}</div>
                 <div className="text-gray-500 text-xs">{result.person1.nakshatra}</div>
               </div>
               <div className="text-saffron-400 text-3xl self-center">💞</div>
               <div>
                 <div className="text-gold-400 font-bold text-lg">{result.person2.name}</div>
-                <div className="text-gray-400 text-sm">{result.person2.moon_sign} Moon</div>
+                <div className="text-gray-400 text-sm">{result.person2.moon_sign} {t.match.moonSign}</div>
                 <div className="text-gray-500 text-xs">{result.person2.nakshatra}</div>
               </div>
             </div>
@@ -167,7 +173,7 @@ export default function MatchPage() {
             <div className={`inline-block border rounded-full px-6 py-2 text-lg font-bold mb-2 ${verdictColor[result.verdict] || 'text-gray-400'}`}>
               {result.verdict}
             </div>
-            <div className="text-gray-400 text-sm">{result.percentage}% compatibility</div>
+            <div className="text-gray-400 text-sm">{result.percentage}% {t.match.compatibility}</div>
 
             <div className="w-full max-w-sm mx-auto mt-4 bg-deepblue-950 rounded-full h-3">
               <div
@@ -177,7 +183,6 @@ export default function MatchPage() {
             </div>
           </div>
 
-          {/* Mangal Dosha */}
           <div className={`border rounded-xl p-4 text-sm ${
             result.mangal.person1.has_dosha || result.mangal.person2.has_dosha
               ? result.mangal.cancelled
@@ -188,9 +193,8 @@ export default function MatchPage() {
             <span className="font-semibold">Mangal Dosha: </span>{result.mangal.note}
           </div>
 
-          {/* Koot breakdown */}
           <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
-            <h3 className="text-gold-400 font-bold text-lg mb-4">Ashtakoot Breakdown</h3>
+            <h3 className="text-gold-400 font-bold text-lg mb-4">{t.match.breakdown}</h3>
             <div className="space-y-3">
               {result.koots.map(k => (
                 <div key={k.name} className="flex items-center gap-4">
@@ -206,35 +210,32 @@ export default function MatchPage() {
                 </div>
               ))}
               <div className="flex items-center gap-4 pt-2 border-t border-saffron-700/20">
-                <div className="w-28 text-gold-400 text-sm font-bold">Total</div>
+                <div className="w-28 text-gold-400 text-sm font-bold">{t.match.total}</div>
                 <div className="flex-1" />
                 <div className="w-12 text-right text-gold-400 font-bold">{result.total_score}/36</div>
               </div>
             </div>
           </div>
 
-          {/* AI Reading */}
           <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-gold-400 font-bold text-lg">AI Compatibility Reading</h3>
+              <h3 className="text-gold-400 font-bold text-lg">{t.match.aiReading}</h3>
               {!interpretation && (
                 <button
                   onClick={getAiReading}
                   disabled={aiLoading}
                   className="bg-saffron-700 hover:bg-saffron-600 disabled:bg-saffron-900 text-white text-sm py-2 px-4 rounded-lg transition"
                 >
-                  {aiLoading ? 'Reading stars...' : 'Get Full Reading'}
+                  {aiLoading ? t.match.readingLoading : t.match.getReading}
                 </button>
               )}
             </div>
-            {aiLoading && <p className="text-saffron-400 text-sm animate-pulse">Jyotish Guru is reading the compatibility...</p>}
+            {aiLoading && <p className="text-saffron-400 text-sm animate-pulse">{t.match.readingLoading}</p>}
             {interpretation && (
-              <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
-                {interpretation}
-              </div>
+              <div className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">{interpretation}</div>
             )}
             {!interpretation && !aiLoading && (
-              <p className="text-gray-500 text-sm">Click &quot;Get Full Reading&quot; for a detailed AI compatibility analysis combining Parashari and Bhrigu Samhita frameworks.</p>
+              <p className="text-gray-500 text-sm">{t.match.readingPlaceholder}</p>
             )}
           </div>
         </div>

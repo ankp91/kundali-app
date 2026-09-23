@@ -2,6 +2,7 @@
 import { useState, useCallback } from 'react'
 import { useDropzone } from 'react-dropzone'
 import axios from 'axios'
+import { useLanguage } from './LanguageProvider'
 
 
 interface Props { onChart: (data: object) => void }
@@ -10,6 +11,7 @@ export default function UploadForm({ onChart }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [fileName, setFileName] = useState('')
+  const { t } = useLanguage()
 
   const onDrop = useCallback(async (files: File[]) => {
     const file = files[0]
@@ -44,8 +46,8 @@ export default function UploadForm({ onChart }: Props) {
 
   return (
     <div className="bg-deepblue-900 border border-saffron-700/40 rounded-2xl p-8">
-      <h2 className="text-2xl font-bold text-gold-400 mb-2">Upload Your Kundali</h2>
-      <p className="text-gray-400 text-sm mb-6">Supports JPG, PNG, WebP, or PDF. AI will read the planetary positions.</p>
+      <h2 className="text-2xl font-bold text-gold-400 mb-2">{t.uploadForm.title}</h2>
+      <p className="text-gray-400 text-sm mb-6">{t.uploadForm.subtitle}</p>
       <div
         {...getRootProps()}
         className={`border-2 border-dashed rounded-xl p-12 text-center cursor-pointer transition ${
@@ -56,7 +58,7 @@ export default function UploadForm({ onChart }: Props) {
         {loading ? (
           <div>
             <div className="text-4xl mb-3 animate-spin inline-block">⏳</div>
-            <p className="text-saffron-400">AI reading your chart...</p>
+            <p className="text-saffron-400">{t.uploadForm.reading}</p>
           </div>
         ) : (
           <div>
@@ -65,8 +67,8 @@ export default function UploadForm({ onChart }: Props) {
               <p className="text-saffron-400">{fileName}</p>
             ) : (
               <>
-                <p className="text-gray-300 mb-1">Drop your kundali here</p>
-                <p className="text-gray-500 text-sm">or click to browse</p>
+                <p className="text-gray-300 mb-1">{t.uploadForm.drop}</p>
+                <p className="text-gray-500 text-sm">{t.uploadForm.browse}</p>
               </>
             )}
           </div>

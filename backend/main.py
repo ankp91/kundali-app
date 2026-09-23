@@ -38,6 +38,7 @@ class ChatMessage(BaseModel):
     message: str
     chart_data: dict
     history: List[dict] = []
+    language: str = 'en'
 
 
 class InterpretRequest(BaseModel):
@@ -45,12 +46,14 @@ class InterpretRequest(BaseModel):
     sign: str
     house: int
     chart_data: dict
+    language: str = 'en'
 
 
 class LessonExplainRequest(BaseModel):
     lesson_id: str
     topic: dict
     chart_data: Optional[dict] = None
+    language: str = 'en'
 
 
 class MatchInput(BaseModel):
@@ -94,13 +97,14 @@ async def parse_chart(file: UploadFile = File(...)):
 
 @app.post("/api/interpret-full")
 def full_interpretation(chart_data: dict):
-    return StreamingResponse(stream_full_chart(chart_data), media_type="text/plain; charset=utf-8")
+    language = chart_data.pop("language", "en")
+    return StreamingResponse(stream_full_chart(chart_data, language), media_type="text/plain; charset=utf-8")
 
 
 @app.post("/api/interpret-placement")
 def placement_interpretation(req: InterpretRequest):
     return StreamingResponse(
-        stream_placement(req.planet, req.sign, req.house, req.chart_data),
+        stream_placement(req.planet, req.sign, req.house, req.chart_data, req.language),
         media_type="text/plain; charset=utf-8",
     )
 
@@ -108,7 +112,7 @@ def placement_interpretation(req: InterpretRequest):
 @app.post("/api/chat")
 def chat(req: ChatMessage):
     return StreamingResponse(
-        stream_chat(req.message, req.chart_data, req.history),
+        stream_chat(req.message, req.chart_data, req.history, req.language),
         media_type="text/plain; charset=utf-8",
     )
 
@@ -129,7 +133,7 @@ def lesson(lesson_id: str):
 @app.post("/api/lessons/explain")
 def explain(req: LessonExplainRequest):
     try:
-        explanation = explain_lesson_topic(req.lesson_id, req.topic, req.chart_data)
+        explanation = explain_lesson_topic(req.lesson_id, req.topic, req.chart_data, req.language)
         return {"explanation": explanation}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -150,6 +154,7 @@ def match_charts(data: MatchInput):
 @app.post("/api/match-interpret")
 def match_interpret(match_data: dict):
     try:
-        return {"interpretation": interpret_match(match_data)}
+        language = match_data.pop("language", "en")
+        return {"interpretation": interpret_match(match_data, language)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

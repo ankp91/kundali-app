@@ -21,8 +21,13 @@ def _call_claude(system: str, messages: list, max_tokens: int) -> str:
     return resp.content[0].text
 
 
+def _lang_instruction(language: str) -> str:
+    if language == 'hi':
+        return "\n\nIMPORTANT: Respond entirely in Hindi (Devanagari script). Use proper Jyotish terminology in Hindi where appropriate, but keep technical planet/sign/nakshatra names in both Hindi and their common English equivalents in brackets."
+    return ""
+
+
 def _stream_claude(system: str, messages: list, max_tokens: int):
-    """Yields text chunks as they arrive from Anthropic."""
     with _make_client().messages.stream(
         model=MODEL, max_tokens=max_tokens, system=system, messages=messages
     ) as stream:
@@ -115,8 +120,9 @@ def interpret_placement(planet: str, sign: str, house: int, chart_context: dict)
     return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": _placement_msg(planet, sign, house, chart_context)}], 1500)
 
 
-def stream_placement(planet: str, sign: str, house: int, chart_context: dict):
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": _placement_msg(planet, sign, house, chart_context)}], 1500)
+def stream_placement(planet: str, sign: str, house: int, chart_context: dict, language: str = 'en'):
+    msg = _placement_msg(planet, sign, house, chart_context) + _lang_instruction(language)
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 1500)
 
 
 def interpret_full_chart(chart_data: dict) -> str:
@@ -168,7 +174,7 @@ Be warm, constructive and insightful. About 600 words."""
     return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
-def stream_full_chart(chart_data: dict):
+def stream_full_chart(chart_data: dict, language: str = 'en'):
     asc = chart_data.get("ascendant", {})
     planets = chart_data.get("planets", {})
     dashas = chart_data.get("dashas", [])
@@ -204,7 +210,7 @@ Cover:
 5. Current dasha analysis with Jupiter transit timing (Bhrigu Nadi) — what is Jupiter transiting right now and what does it mean?
 6. Bhrigu Bindu — which house/sign it falls in and when Jupiter will next transit it
 
-Be warm, constructive and insightful. About 600 words."""
+Be warm, constructive and insightful. About 600 words.""" + _lang_instruction(language)
     return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
@@ -240,7 +246,7 @@ Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions
     return _call_claude(system, messages, 2000)
 
 
-def stream_chat(message: str, chart_data: dict, history: list):
+def stream_chat(message: str, chart_data: dict, history: list, language: str = 'en'):
     asc = chart_data.get("ascendant", {})
     planets = chart_data.get("planets", {})
     planet_summary = "\n".join([f"{p}: {d['sign']} House {d['house']}" for p, d in planets.items()])
@@ -261,7 +267,7 @@ The user's kundali:{birth_line}
 Ascendant: {asc.get('sign')} {asc.get('degree')}°
 {planet_summary}{dasha_line}{bb_line}
 
-Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu."""
+Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu.""" + _lang_instruction(language)
     messages = history + [{"role": "user", "content": message}]
     return _stream_claude(system, messages, 2000)
 
@@ -563,7 +569,7 @@ def get_lesson(lesson_id: str) -> Optional[dict]:
     return None
 
 
-def explain_lesson_topic(lesson_id: str, topic: dict, user_chart: Optional[dict] = None) -> str:
+def explain_lesson_topic(lesson_id: str, topic: dict, user_chart: Optional[dict] = None, language: str = 'en') -> str:
     chart_context = ""
     if user_chart:
         asc = user_chart.get("ascendant", {})
@@ -582,12 +588,12 @@ Requirements:
 - Use clear language with Sanskrit terms explained
 - Include real-world examples of how this manifests
 - If chart context provided, relate it to the actual chart
-- End with one practical insight or takeaway"""
+- End with one practical insight or takeaway""" + _lang_instruction(language)
 
     return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
-def interpret_match(match_data: dict) -> str:
+def interpret_match(match_data: dict, language: str = 'en') -> str:
     p1 = match_data.get("person1", {})
     p2 = match_data.get("person2", {})
     koots = match_data.get("koots", [])
@@ -630,6 +636,6 @@ Cover:
 6. Practical advice for making this relationship thrive
 7. Auspicious timing — when are good periods for marriage or deepening commitment?
 
-Be warm, honest, and constructive. About 500 words."""
+Be warm, honest, and constructive. About 500 words.""" + _lang_instruction(language)
 
     return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)

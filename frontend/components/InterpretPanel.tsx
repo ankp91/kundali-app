@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { useLanguage } from './LanguageProvider'
 
 
 interface Props {
@@ -32,13 +33,14 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
   const [interpretation, setInterpretation] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const { t, lang } = useLanguage()
 
   const fetchFull = async () => {
     setLoading(true)
     setError('')
     setInterpretation('')
     try {
-      await readStream('/api/interpret-full', chartData, chunk =>
+      await readStream('/api/interpret-full', { ...chartData, language: lang }, chunk =>
         setInterpretation(prev => prev + chunk)
       )
     } catch (err: unknown) {
@@ -56,7 +58,7 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
     setInterpretation('')
     try {
       await readStream('/api/interpret-placement', {
-        planet: selectedPlanet, sign: pd.sign, house: pd.house, chart_data: chartData,
+        planet: selectedPlanet, sign: pd.sign, house: pd.house, chart_data: chartData, language: lang,
       }, chunk => setInterpretation(prev => prev + chunk))
     } catch (err: unknown) {
       setError((err as Error)?.message || 'Failed to get interpretation. Please try again.')
@@ -67,14 +69,14 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
 
   return (
     <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
-      <h3 className="text-gold-400 font-bold text-lg mb-4">AI Interpretation</h3>
+      <h3 className="text-gold-400 font-bold text-lg mb-4">{t.interpret.title}</h3>
       <div className="flex gap-3 mb-4">
         <button
           onClick={fetchFull}
           disabled={loading}
           className="flex-1 bg-saffron-700 hover:bg-saffron-600 disabled:bg-saffron-900 text-white text-sm py-2 px-3 rounded-lg transition"
         >
-          Full Chart Reading
+          {t.interpret.fullReading}
         </button>
         {selectedPlanet && (
           <button
@@ -82,12 +84,12 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
             disabled={loading}
             className="flex-1 bg-deepblue-950 border border-saffron-700/40 hover:border-gold-400 text-saffron-400 text-sm py-2 px-3 rounded-lg transition"
           >
-            Explain {selectedPlanet}
+            {t.interpret.explain} {selectedPlanet}
           </button>
         )}
       </div>
       {loading && !interpretation && (
-        <div className="text-saffron-400 text-sm animate-pulse">Jyotish Guru is reading your chart...</div>
+        <div className="text-saffron-400 text-sm animate-pulse">{t.interpret.thinking}</div>
       )}
       {error && (
         <div className="text-red-400 text-sm bg-red-900/20 border border-red-700/30 rounded-lg p-3 mt-2">
@@ -100,7 +102,7 @@ export default function InterpretPanel({ chartData, selectedPlanet, planets }: P
         </div>
       )}
       {!interpretation && !error && !loading && (
-        <p className="text-gray-500 text-sm">Click a planet in the table or request a full chart reading above.</p>
+        <p className="text-gray-500 text-sm">{t.interpret.placeholder}</p>
       )}
     </div>
   )

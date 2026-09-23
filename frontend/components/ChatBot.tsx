@@ -1,14 +1,15 @@
 'use client'
 import { useState, useRef, useEffect } from 'react'
+import { useLanguage } from './LanguageProvider'
 
 
 interface Message { role: 'user' | 'assistant'; content: string }
-
 interface Props { chartData: object }
 
 export default function ChatBot({ chartData }: Props) {
+  const { t, lang } = useLanguage()
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'assistant', content: 'Namaste! I am Jyotish Guru. Ask me anything about your kundali — planetary placements, dashas, yogas, or what specific aspects mean for your life.' }
+    { role: 'assistant', content: t.chat.greeting }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -17,6 +18,10 @@ export default function ChatBot({ chartData }: Props) {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  useEffect(() => {
+    setMessages([{ role: 'assistant', content: t.chat.greeting }])
+  }, [lang, t.chat.greeting])
 
   const send = async () => {
     if (!input.trim() || loading) return
@@ -29,7 +34,7 @@ export default function ChatBot({ chartData }: Props) {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, chart_data: chartData, history }),
+        body: JSON.stringify({ message: input, chart_data: chartData, history, language: lang }),
       })
       if (!res.ok) throw new Error('Chat failed')
       const reader = res.body!.getReader()
@@ -50,7 +55,7 @@ export default function ChatBot({ chartData }: Props) {
     } catch {
       setMessages(prev => {
         const updated = [...prev]
-        updated[updated.length - 1] = { role: 'assistant', content: 'Sorry, I could not process that. Try again.' }
+        updated[updated.length - 1] = { role: 'assistant', content: t.chat.error }
         return updated
       })
     } finally {
@@ -61,7 +66,7 @@ export default function ChatBot({ chartData }: Props) {
   return (
     <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl flex flex-col h-96">
       <div className="border-b border-saffron-700/20 px-4 py-3">
-        <h3 className="text-gold-400 font-bold">Chat with Jyotish Guru</h3>
+        <h3 className="text-gold-400 font-bold">{t.chat.title}</h3>
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.map((m, i) => (
@@ -78,7 +83,7 @@ export default function ChatBot({ chartData }: Props) {
         {loading && messages[messages.length - 1]?.content === '' && (
           <div className="flex justify-start">
             <div className="bg-deepblue-950 border border-saffron-700/20 rounded-xl px-4 py-2 text-saffron-400 text-sm animate-pulse">
-              Jyotish Guru is thinking...
+              {t.chat.thinking}
             </div>
           </div>
         )}
@@ -89,7 +94,7 @@ export default function ChatBot({ chartData }: Props) {
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          placeholder="Ask about your kundali..."
+          placeholder={t.chat.placeholder}
           className="flex-1 bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-400 focus:outline-none"
         />
         <button
@@ -97,7 +102,7 @@ export default function ChatBot({ chartData }: Props) {
           disabled={loading || !input.trim()}
           className="bg-saffron-600 hover:bg-saffron-500 disabled:bg-saffron-900 text-white px-4 py-2 rounded-lg text-sm transition"
         >
-          Send
+          {t.chat.send}
         </button>
       </div>
     </div>

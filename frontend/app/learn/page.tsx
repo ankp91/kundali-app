@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import { useLanguage } from '@/components/LanguageProvider'
 
 
 interface Lesson { id: string; title: string; icon: string; description: string }
@@ -12,6 +13,7 @@ export default function LearnPage() {
   const [explanations, setExplanations] = useState<Record<number, string>>({})
   const [loading, setLoading] = useState(false)
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null)
+  const { t, lang } = useLanguage()
 
   useEffect(() => {
     axios.get(`/api/lessons`).then(r => setLessons(r.data))
@@ -33,6 +35,7 @@ export default function LearnPage() {
       lesson_id: selected?.id,
       topic,
       chart_data: chart ? JSON.parse(chart) : null,
+      language: lang,
     })
     setExplanations(prev => ({ ...prev, [idx]: data.explanation }))
     setLoading(false)
@@ -40,8 +43,8 @@ export default function LearnPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gold-400 mb-2">Learn Jyotish</h1>
-      <p className="text-gray-400 mb-8">Master Vedic astrology — from houses and planets to dashas and yogas</p>
+      <h1 className="text-3xl font-bold text-gold-400 mb-2">{t.learn.title}</h1>
+      <p className="text-gray-400 mb-8">{t.learn.subtitle}</p>
 
       {!selected ? (
         <div className="grid md:grid-cols-2 gap-4">
@@ -60,7 +63,7 @@ export default function LearnPage() {
       ) : (
         <div>
           <button onClick={() => setSelected(null)} className="text-saffron-400 hover:text-gold-400 mb-6">
-            ← All Lessons
+            {t.learn.back}
           </button>
           <h2 className="text-2xl font-bold text-gold-400 mb-6">{selected.title}</h2>
           <div className="space-y-3">
@@ -85,7 +88,7 @@ export default function LearnPage() {
                       ))}
                     </div>
                     {loading && expandedIdx === idx ? (
-                      <p className="text-saffron-400 text-sm animate-pulse">Jyotish Guru is explaining...</p>
+                      <p className="text-saffron-400 text-sm animate-pulse">{t.learn.thinking}</p>
                     ) : (
                       <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
                         {explanations[idx]}
