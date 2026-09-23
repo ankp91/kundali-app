@@ -18,7 +18,8 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Create app if it does not exist
-        run: flyctl apps create kundali-backend 2>/dev/null || echo "App already exists"
+        run: |
+          flyctl apps list | grep -q "kundali-backend" || flyctl apps create kundali-backend --org ankit-purohit-623
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
