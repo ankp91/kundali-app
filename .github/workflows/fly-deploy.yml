@@ -18,17 +18,17 @@ jobs:
       - uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Create app if it does not exist
-        run: fly apps create kundali-backend 2>/dev/null || echo "App already exists"
+        run: flyctl apps create kundali-backend 2>/dev/null || echo "App already exists"
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 
       - name: Set API key secret
-        run: fly secrets set ANTHROPIC_VISION_API_KEY="$ANTHROPIC_VISION_API_KEY" --app kundali-backend
+        run: flyctl secrets set ANTHROPIC_VISION_API_KEY="$ANTHROPIC_VISION_API_KEY" --app kundali-backend
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           ANTHROPIC_VISION_API_KEY: ${{ secrets.ANTHROPIC_VISION_API_KEY }}
 
       - name: Deploy
-        run: fly deploy --remote-only --app kundali-backend
+        run: flyctl deploy --remote-only --app kundali-backend
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
