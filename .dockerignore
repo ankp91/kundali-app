@@ -1,0 +1,7 @@
+frontend/
+.git/
+.github/
+*.md
+ngrok.yml
+start-all.sh
+fly.toml
