@@ -38,6 +38,9 @@ function toHousesNum(houses: Record<number | string, DivHouseData>) {
   return result
 }
 
+const isApiError = (s: string) =>
+  s.startsWith('Error:') || s.includes('could not process') || s.includes('Sorry,')
+
 export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props) {
   const { lang } = useLanguage()
   const data = { d9, d10, d7, d12 }
@@ -46,7 +49,7 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const interpret = async (key: string, divData: DivisionalData) => {
-    if (interpretations[key] && !interpretations[key].startsWith('Error:')) {
+    if (interpretations[key] && !isApiError(interpretations[key])) {
       setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
       return
     }
@@ -114,7 +117,7 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
                   onClick={() => interpret(key, chart)}
                   className="flex-shrink-0 text-xs px-3 py-1 rounded-lg border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 transition"
                 >
-                  {isLoading ? '...' : text?.startsWith('Error:') ? 'Retry' : text ? (isExpanded ? 'Hide' : 'Show reading') : 'Interpret'}
+                  {isLoading ? '...' : (text && isApiError(text)) ? 'Retry' : text ? (isExpanded ? 'Hide' : 'Show reading') : 'Interpret'}
                 </button>
               </div>
 
