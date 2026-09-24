@@ -5,14 +5,17 @@ import KundaliChart from '@/components/KundaliChart'
 import PlanetTable from '@/components/PlanetTable'
 import InterpretPanel from '@/components/InterpretPanel'
 import ChatBot from '@/components/ChatBot'
+import DivisionalCharts from '@/components/DivisionalCharts'
 import { useLanguage } from '@/components/LanguageProvider'
+import { downloadKundaliPDF } from '@/lib/downloadPDF'
 
 export default function ChartPage() {
   const router = useRouter()
   const [chart, setChart] = useState<Record<string, unknown> | null>(null)
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null)
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha'>('interpret')
+  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals'>('interpret')
+  const [pdfLoading, setPdfLoading] = useState(false)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -33,15 +36,26 @@ export default function ChartPage() {
   const housesNum: Record<number, { sign: string; sign_hindi: string; planets: string[] }> = {}
   Object.entries(houses || {}).forEach(([k, v]) => { housesNum[parseInt(k)] = v })
 
+  const handleDownloadPDF = async () => {
+    if (!chart) return
+    setPdfLoading(true)
+    try {
+      await downloadKundaliPDF(chart)
+    } finally {
+      setPdfLoading(false)
+    }
+  }
+
   const tabs = [
     { key: 'interpret', label: t.chart.interpret },
     { key: 'chat', label: t.chart.chat },
     { key: 'dasha', label: t.chart.dasha },
+    { key: 'divisionals', label: 'Divisionals' },
   ] as const
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-center gap-4 mb-8 flex-wrap">
         <button onClick={() => router.push('/')} className="text-saffron-400 hover:text-gold-400">{t.chart.newChart}</button>
         <h1 className="text-2xl font-bold text-gold-400">
           {chart.name as string || 'Kundali'} — {t.chart.birthChart}
@@ -51,12 +65,22 @@ export default function ChartPage() {
             {(chart.birth_info as { date: string; place: string }).date} · {(chart.birth_info as { date: string; place: string }).place}
           </span>
         )}
+        <div className="ml-auto">
+          <button
+            onClick={handleDownloadPDF}
+            disabled={pdfLoading}
+            className="flex items-center gap-2 bg-deepblue-900 border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 text-sm font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
+          >
+            {pdfLoading ? '⏳ Generating...' : '⬇ Download PDF'}
+          </button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div className="flex justify-center">
             <KundaliChart
+              id="chart-d1"
               houses={housesNum}
               ascendant={ascendant}
               name={chart.name as string}
@@ -103,6 +127,15 @@ export default function ChartPage() {
 
           {activeTab === 'chat' && <ChatBot chartData={chart} />}
 
+          {activeTab === 'divisionals' && !!chart.d9 && (
+            <DivisionalCharts
+              d9={chart.d9 as Parameters<typeof DivisionalCharts>[0]['d9']}
+              d10={chart.d10 as Parameters<typeof DivisionalCharts>[0]['d10']}
+              d7={chart.d7 as Parameters<typeof DivisionalCharts>[0]['d7']}
+              d12={chart.d12 as Parameters<typeof DivisionalCharts>[0]['d12']}
+            />
+          )}
+
           {activeTab === 'dasha' && dashas && (
             <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
               <h3 className="text-gold-400 font-bold text-lg mb-4">{t.chart.vimshottariDasha}</h3>
@@ -128,6 +161,18 @@ export default function ChartPage() {
           )}
         </div>
       </div>
+
+      {/* Hidden charts kept in DOM so PDF can capture them by id */}
+      {!!chart.d9 && activeTab !== 'divisionals' && (
+        <div aria-hidden="true" style={{ position: 'absolute', left: '-9999px', top: 0, pointerEvents: 'none' }}>
+          <DivisionalCharts
+            d9={chart.d9 as Parameters<typeof DivisionalCharts>[0]['d9']}
+            d10={chart.d10 as Parameters<typeof DivisionalCharts>[0]['d10']}
+            d7={chart.d7 as Parameters<typeof DivisionalCharts>[0]['d7']}
+            d12={chart.d12 as Parameters<typeof DivisionalCharts>[0]['d12']}
+          />
+        </div>
+      )}
     </div>
   )
 }

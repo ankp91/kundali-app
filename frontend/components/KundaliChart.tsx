@@ -13,6 +13,8 @@ interface Props {
   size?: number
   onHouseClick?: (house: number) => void
   selectedHouse?: number | null
+  id?: string
+  label?: string
 }
 
 const PLANET_ABBR: Record<string, string> = {
@@ -38,13 +40,14 @@ const HOUSE_POSITIONS: Record<number, { row: number; col: number }> = {
 }
 
 export default function KundaliChart({
-  houses, ascendant, name, size = 480, onHouseClick, selectedHouse
+  houses, ascendant, name, size = 480, onHouseClick, selectedHouse, id, label
 }: Props) {
   const cellSize = size / 4
   const padding = 8
 
   return (
     <svg
+      id={id}
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
@@ -150,7 +153,20 @@ export default function KundaliChart({
         stroke="rgba(251,146,60,0.2)"
         strokeWidth={1}
       />
-      {name && (
+      {label && (
+        <text
+          x={cellSize * 2}
+          y={cellSize * 1.55}
+          textAnchor="middle"
+          fontSize={10}
+          fontWeight="bold"
+          fill="rgba(251,191,36,0.95)"
+          fontFamily="sans-serif"
+        >
+          {label}
+        </text>
+      )}
+      {name && !label && (
         <text
           x={cellSize * 2}
           y={cellSize * 1.7}
@@ -165,17 +181,17 @@ export default function KundaliChart({
       )}
       <text
         x={cellSize * 2}
-        y={cellSize * 2}
+        y={label ? cellSize * 1.85 : cellSize * 2}
         textAnchor="middle"
         fontSize={9}
         fill="rgba(251,146,60,0.7)"
         fontFamily="sans-serif"
       >
-        Lagna: {ascendant?.sign}
+        {ascendant?.sign_hindi || ascendant?.sign}
       </text>
       <text
         x={cellSize * 2}
-        y={cellSize * 2.2}
+        y={label ? cellSize * 2.05 : cellSize * 2.2}
         textAnchor="middle"
         fontSize={8}
         fill="rgba(245,240,232,0.4)"

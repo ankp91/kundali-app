@@ -26,6 +26,55 @@ NAKSHATRAS = [
 DASHA_LORDS = ["Ketu","Venus","Sun","Moon","Mars","Rahu","Jupiter","Saturn","Mercury"]
 DASHA_YEARS = [7, 20, 6, 10, 7, 18, 16, 19, 17]
 
+# Navamsa start signs by D1 sign (fire=Aries, earth=Capricorn, air=Libra, water=Cancer)
+_NAVAMSA_START = [0, 9, 6, 3, 0, 9, 6, 3, 0, 9, 6, 3]
+
+
+def _navamsa_sign(lon: float) -> int:
+    s = int(lon / 30)
+    return (_NAVAMSA_START[s] + int((lon % 30) * 9 / 30)) % 12
+
+
+def _dasamsa_sign(lon: float) -> int:
+    s = int(lon / 30)
+    n = int((lon % 30) / 3)
+    return (s + n) % 12 if s % 2 == 0 else (s + 9 + n) % 12
+
+
+def _saptamsa_sign(lon: float) -> int:
+    s = int(lon / 30)
+    n = int((lon % 30) * 7 / 30)
+    return (s + n) % 12 if s % 2 == 0 else (s + 6 + n) % 12
+
+
+def _dwadasamsa_sign(lon: float) -> int:
+    s = int(lon / 30)
+    return (s + int((lon % 30) / 2.5)) % 12
+
+
+def _build_divisional(planet_data: dict, asc_lon: float, sign_fn) -> dict:
+    asc_s = sign_fn(asc_lon)
+    planets = {}
+    for pname, pd in planet_data.items():
+        s = sign_fn(pd['longitude'])
+        planets[pname] = {
+            'sign': SIGNS[s], 'sign_hindi': SIGNS_HINDI[s],
+            'sign_num': s, 'house': ((s - asc_s) % 12) + 1,
+        }
+    houses = {}
+    for h in range(1, 13):
+        si = (asc_s + h - 1) % 12
+        houses[h] = {
+            'sign': SIGNS[si], 'sign_hindi': SIGNS_HINDI[si],
+            'sign_num': si,
+            'planets': [p for p, d in planets.items() if d['house'] == h],
+        }
+    return {
+        'ascendant': {'sign': SIGNS[asc_s], 'sign_hindi': SIGNS_HINDI[asc_s], 'sign_num': asc_s, 'degree': 0},
+        'planets': planets,
+        'houses': houses,
+    }
+
 
 def get_coordinates(place: str) -> tuple[float, float, str]:
     geolocator = Nominatim(user_agent="kundali_app")
@@ -186,6 +235,10 @@ def calculate_kundali(birth_date: str, birth_time: str, birth_place: str) -> dic
         "houses": houses,
         "dashas": dasha_sequence,
         "bhrigu_bindu": bhrigu_bindu,
+        "d9": _build_divisional(planet_data, asc_sidereal, _navamsa_sign),
+        "d10": _build_divisional(planet_data, asc_sidereal, _dasamsa_sign),
+        "d7": _build_divisional(planet_data, asc_sidereal, _saptamsa_sign),
+        "d12": _build_divisional(planet_data, asc_sidereal, _dwadasamsa_sign),
         "birth_info": {
             "date": birth_date,
             "time": birth_time,
