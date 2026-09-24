@@ -46,7 +46,7 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
   const interpret = async (key: string, divData: DivisionalData) => {
-    if (interpretations[key]) {
+    if (interpretations[key] && !interpretations[key].startsWith('Error:')) {
       setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
       return
     }
@@ -55,17 +55,24 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
     setInterpretations(prev => ({ ...prev, [key]: '' }))
 
     try {
+      // Strip divisional sub-charts from d1_chart to keep payload small
+      const { d9, d10, d7, d12, ...d1Only } = fullChart as Record<string, unknown>
+      void d9; void d10; void d7; void d12
       const res = await fetch('/api/interpret-divisional', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           div_type: key,
           div_data: divData,
-          d1_chart: fullChart,
+          d1_chart: d1Only,
           language: lang,
         }),
       })
-      if (!res.ok || !res.body) throw new Error('Request failed')
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '')
+        throw new Error(`Error ${res.status}: ${errText.slice(0, 200)}`)
+      }
+      if (!res.body) throw new Error('No response body')
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
@@ -76,8 +83,9 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
         text += decoder.decode(value, { stream: true })
         setInterpretations(prev => ({ ...prev, [key]: text }))
       }
-    } catch {
-      setInterpretations(prev => ({ ...prev, [key]: 'Could not load interpretation. Please try again.' }))
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      setInterpretations(prev => ({ ...prev, [key]: `Error: ${msg}\n\nTap "Retry" to try again.` }))
     } finally {
       setLoading(prev => ({ ...prev, [key]: false }))
     }
@@ -106,7 +114,7 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
                   onClick={() => interpret(key, chart)}
                   className="flex-shrink-0 text-xs px-3 py-1 rounded-lg border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 transition"
                 >
-                  {isLoading ? '...' : text ? (isExpanded ? 'Hide' : 'Show reading') : 'Interpret'}
+                  {isLoading ? '...' : text?.startsWith('Error:') ? 'Retry' : text ? (isExpanded ? 'Hide' : 'Show reading') : 'Interpret'}
                 </button>
               </div>
 
