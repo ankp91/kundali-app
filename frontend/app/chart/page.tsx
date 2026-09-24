@@ -133,6 +133,7 @@ export default function ChartPage() {
               d10={chart.d10 as Parameters<typeof DivisionalCharts>[0]['d10']}
               d7={chart.d7 as Parameters<typeof DivisionalCharts>[0]['d7']}
               d12={chart.d12 as Parameters<typeof DivisionalCharts>[0]['d12']}
+              fullChart={chart}
             />
           )}
 
@@ -170,6 +171,7 @@ export default function ChartPage() {
             d10={chart.d10 as Parameters<typeof DivisionalCharts>[0]['d10']}
             d7={chart.d7 as Parameters<typeof DivisionalCharts>[0]['d7']}
             d12={chart.d12 as Parameters<typeof DivisionalCharts>[0]['d12']}
+            fullChart={chart}
           />
         </div>
       )}

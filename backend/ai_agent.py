@@ -593,6 +593,104 @@ Requirements:
     return _call_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
+_DIV_INFO: dict = {
+    'd9': {
+        'name': 'Navamsa (D9)',
+        'domain': 'marriage, soulmate connection, dharmic path, spiritual self, inner character',
+        'instructions': (
+            "1. D9 ascendant vs D1 ascendant — what does it reveal about the inner self vs. outer self?\n"
+            "2. Venus in D9 — nature of the marriage partner and relationship potential\n"
+            "3. Jupiter in D9 — spiritual growth and dharmic expansion\n"
+            "4. Vargottama planets (same sign in D1 and D9) — greatly strengthened, note each one\n"
+            "5. 7th house of D9 — what kind of partner is fated?\n"
+            "6. Overall D9 story: is this a chart built for deep spiritual partnership or independence?"
+        ),
+    },
+    'd10': {
+        'name': 'Dasamsa (D10)',
+        'domain': 'career, profession, public life, social status, authority',
+        'instructions': (
+            "1. D10 ascendant — the professional identity and public-facing persona\n"
+            "2. Sun in D10 — authority, recognition, and career peak potential\n"
+            "3. Saturn in D10 — karmic duty in career and sustained effort\n"
+            "4. 10th house of D10 — the zenith of the professional story\n"
+            "5. 11th house of D10 — career gains and income trajectory\n"
+            "6. Best-suited fields and timing of career peaks based on dasha"
+        ),
+    },
+    'd7': {
+        'name': 'Saptamsa (D7)',
+        'domain': 'children, progeny, creativity, procreative energy, legacy',
+        'instructions': (
+            "1. D7 ascendant — foundation of progeny karma and creative identity\n"
+            "2. Jupiter in D7 — blessings for children and fertility indicators\n"
+            "3. 5th house of D7 — direct indicator of children and their nature\n"
+            "4. Moon in D7 — emotional bond with children\n"
+            "5. Any malefics in 5th or afflicting Jupiter — challenges to consider\n"
+            "6. Timing: when are children most likely based on dasha and D7?"
+        ),
+    },
+    'd12': {
+        'name': 'Dwadasamsa (D12)',
+        'domain': 'parents, ancestral karma, lineage, inherited patterns',
+        'instructions': (
+            "1. D12 ascendant — the ancestral karma imprint on the soul\n"
+            "2. Sun in D12 — father's karma and its influence on this life\n"
+            "3. Moon in D12 — mother's karma and emotional inheritance\n"
+            "4. 4th house of D12 — mother's side of the family\n"
+            "5. 9th house of D12 — father's side and blessings or debts carried forward\n"
+            "6. What karmic gifts or ancestral debts is this person born with?"
+        ),
+    },
+}
+
+
+def stream_divisional_chart(div_type: str, div_data: dict, d1_chart: dict, language: str = 'en'):
+    info = _DIV_INFO.get(div_type, {'name': div_type.upper(), 'domain': '', 'instructions': ''})
+
+    div_planets = div_data.get('planets', {})
+    div_asc = div_data.get('ascendant', {})
+    div_summary = "\n".join([
+        f"- {p}: {d['sign']} (House {d['house']})"
+        for p, d in div_planets.items()
+    ])
+
+    d1_asc = d1_chart.get('ascendant', {})
+    d1_planets = d1_chart.get('planets', {})
+    d1_summary = "\n".join([
+        f"- {p}: {d['sign']} (House {d['house']}, {d.get('degree', '')}°){' [R]' if d.get('is_retrograde') else ''}"
+        for p, d in d1_planets.items()
+    ])
+
+    vargottama = [
+        p for p, pd in div_planets.items()
+        if d1_planets.get(p, {}).get('sign') == pd.get('sign')
+    ]
+    vargottama_line = (
+        f"\nVargottama planets (same sign in D1 and {div_type.upper()}, greatly strengthened): "
+        + ", ".join(vargottama)
+    ) if vargottama else ""
+
+    msg = f"""Interpret this {info['name']} chart for the native.
+
+Domain this chart governs: {info['domain']}
+
+D1 (Natal) Chart — for context:
+Ascendant: {d1_asc.get('sign')} at {d1_asc.get('degree', '')}°
+{d1_summary}
+
+{info['name']} Chart:
+Ascendant: {div_asc.get('sign')}
+{div_summary}{vargottama_line}
+
+Interpretation focus (cover all of these):
+{info['instructions']}
+
+Give a warm, personalised 4-5 paragraph reading. Reference specific planetary placements from the chart above. Blend Parashari structure with Bhrigu karmic depth. About 400 words.""" + _lang_instruction(language)
+
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 1800)
+
+
 def interpret_match(match_data: dict, language: str = 'en') -> str:
     p1 = match_data.get("person1", {})
     p2 = match_data.get("person2", {})

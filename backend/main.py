@@ -14,7 +14,7 @@ from matching import calculate_match
 from ai_agent import (
     interpret_full_chart, interpret_placement,
     chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
-    stream_full_chart, stream_placement, stream_chat,
+    stream_full_chart, stream_placement, stream_chat, stream_divisional_chart,
 )
 
 app = FastAPI(title="Kundali API")
@@ -53,6 +53,13 @@ class LessonExplainRequest(BaseModel):
     lesson_id: str
     topic: dict
     chart_data: Optional[dict] = None
+    language: str = 'en'
+
+
+class DivisionalInterpretRequest(BaseModel):
+    div_type: str
+    div_data: dict
+    d1_chart: dict
     language: str = 'en'
 
 
@@ -137,6 +144,14 @@ def explain(req: LessonExplainRequest):
         return {"explanation": explanation}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/interpret-divisional")
+def interpret_divisional(req: DivisionalInterpretRequest):
+    return StreamingResponse(
+        stream_divisional_chart(req.div_type, req.div_data, req.d1_chart, req.language),
+        media_type="text/plain; charset=utf-8",
+    )
 
 
 @app.post("/api/match-charts")
