@@ -2,9 +2,28 @@ import anthropic
 import base64
 import json
 import os
+import io
+from PIL import Image
+
+_SUPPORTED_MIME = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+
+
+def _normalize_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str]:
+    if mime_type.lower() in _SUPPORTED_MIME:
+        return image_bytes, mime_type
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        if img.mode in ('RGBA', 'P', 'LA'):
+            img = img.convert('RGB')
+        buf = io.BytesIO()
+        img.save(buf, format='JPEG', quality=90)
+        return buf.getvalue(), 'image/jpeg'
+    except Exception:
+        return image_bytes, 'image/jpeg'
 
 
 def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
+    image_bytes, mime_type = _normalize_image(image_bytes, mime_type)
     # Vision requires a direct Anthropic API key — the Salesforce proxy doesn't support image requests.
     # Check for a separate vision key, fall back to the main key without the proxy base_url.
     vision_api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
@@ -57,7 +76,7 @@ If a value is unclear or not visible, use null. Return ONLY valid JSON, no other
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-4-6",
+            model="claude-sonnet-5",
             max_tokens=2000,
             messages=[{
                 "role": "user",

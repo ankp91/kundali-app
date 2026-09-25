@@ -26,7 +26,14 @@ export default function ChatBot({ chartData }: Props) {
   const send = async () => {
     if (!input.trim() || loading) return
     const userMsg: Message = { role: 'user', content: input }
-    const history = messages.map(m => ({ role: m.role, content: m.content }))
+    // Build clean history: Anthropic requires first message = user, no empty/error assistant turns
+    let foundUser = false
+    const history = messages.reduce<{role: string; content: string}[]>((acc, m) => {
+      if (m.role === 'user') foundUser = true
+      if (!foundUser) return acc
+      if (m.role === 'assistant' && (!m.content || m.content === t.chat.error)) return acc
+      return [...acc, { role: m.role, content: m.content }]
+    }, [])
     setMessages(prev => [...prev, userMsg, { role: 'assistant', content: '' }])
     setInput('')
     setLoading(true)
