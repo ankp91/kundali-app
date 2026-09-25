@@ -3,7 +3,7 @@ import os
 from typing import Optional
 from datetime import datetime
 
-MODEL = "claude-sonnet-4-6"
+MODEL = "claude-sonnet-5"
 
 # Prefer the personal direct Anthropic key; fall back to the work key
 _api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
