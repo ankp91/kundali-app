@@ -3,7 +3,7 @@ import os
 from typing import Optional
 from datetime import datetime
 
-MODEL = "claude-sonnet-5"
+MODEL = "claude-sonnet-4-6"
 
 # Prefer the personal direct Anthropic key; fall back to the work key
 _api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
@@ -129,7 +129,7 @@ def interpret_placement(planet: str, sign: str, house: int, chart_context: dict)
 
 def stream_placement(planet: str, sign: str, house: int, chart_context: dict, language: str = 'en'):
     msg = _placement_msg(planet, sign, house, chart_context) + _lang_instruction(language)
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 4000)
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
 def interpret_full_chart(chart_data: dict) -> str:
@@ -218,7 +218,7 @@ Cover:
 6. Bhrigu Bindu — which house/sign it falls in and when Jupiter will next transit it
 
 Be warm, constructive and insightful. About 600 words.""" + _lang_instruction(language)
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 6000)
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2500)
 
 
 def chat_with_chart(message: str, chart_data: dict, history: list) -> str:
@@ -300,7 +300,7 @@ Ascendant: {asc.get('sign')} {asc.get('degree')}°
 
 Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu.""" + _lang_instruction(language)
     messages = history + [{"role": "user", "content": message}]
-    return _stream_claude(system, messages, 16000)
+    return _stream_claude(system, messages, 3000)
 
 
 LESSONS = [
@@ -719,7 +719,7 @@ Interpretation focus (cover all of these):
 
 Give a warm, personalised 4-5 paragraph reading. Reference specific planetary placements from the chart above. Blend Parashari structure with Bhrigu karmic depth. About 400 words.""" + _lang_instruction(language)
 
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 4000)
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
 def interpret_match(match_data: dict, language: str = 'en') -> str:
