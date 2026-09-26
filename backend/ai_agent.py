@@ -268,20 +268,26 @@ def stream_chat(message: str, chart_data: dict, history: list, language: str = '
 
     extra_section = ""
     if extra_chart:
-        extra_name = extra_chart.get("name", "Second person")
-        extra_asc = extra_chart.get("ascendant", {})
-        extra_planets = extra_chart.get("planets", {})
-        extra_summary = "\n".join([f"{p}: {d['sign']} House {d['house']}" for p, d in extra_planets.items()])
-        extra_dashas = extra_chart.get("dashas", [])
-        extra_current_dasha = next((d for d in extra_dashas if d.get("is_current")), None)
-        extra_dasha_line = f"\nCurrent Dasha: {extra_current_dasha['lord']} ({extra_current_dasha['start']} – {extra_current_dasha['end']})" if extra_current_dasha else ""
-        extra_bb = extra_chart.get("bhrigu_bindu", {})
-        extra_bb_line = f"\nBhrigu Bindu: {extra_bb.get('sign')} House {extra_bb.get('house')} at {extra_bb.get('degree')}°" if extra_bb else ""
-        extra_section = f"""
+        try:
+            extra_name = extra_chart.get("name") or "Second person"
+            extra_asc = extra_chart.get("ascendant") or {}
+            extra_planets = extra_chart.get("planets") or {}
+            extra_summary = "\n".join([
+                f"{p}: {d.get('sign', '?')} House {d.get('house', '?')}"
+                for p, d in extra_planets.items() if isinstance(d, dict)
+            ])
+            extra_dashas = extra_chart.get("dashas") or []
+            extra_current_dasha = next((d for d in extra_dashas if d.get("is_current")), None)
+            extra_dasha_line = f"\nCurrent Dasha: {extra_current_dasha['lord']} ({extra_current_dasha['start']} – {extra_current_dasha['end']})" if extra_current_dasha else ""
+            extra_bb = extra_chart.get("bhrigu_bindu") or {}
+            extra_bb_line = f"\nBhrigu Bindu: {extra_bb.get('sign')} House {extra_bb.get('house')} at {extra_bb.get('degree')}°" if extra_bb else ""
+            extra_section = f"""
 
 {extra_name}'s kundali (uploaded for comparison):
-Ascendant: {extra_asc.get('sign')} {extra_asc.get('degree', '')}°
+Ascendant: {extra_asc.get('sign', '?')} {extra_asc.get('degree', '')}°
 {extra_summary}{extra_dasha_line}{extra_bb_line}"""
+        except Exception:
+            extra_section = "\n\nA second kundali was uploaded but could not be fully parsed."
 
     system = f"""{SYSTEM_INTERPRET}
 

@@ -11,7 +11,7 @@ except ImportError:
     _PYPDF_AVAILABLE = False
 
 _SUPPORTED_IMAGE_MIME = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
-_MAX_PDF_PAGES = 5
+_MAX_PDF_PAGES = 3
 
 
 def _truncate_pdf(pdf_bytes: bytes) -> bytes:
