@@ -39,6 +39,7 @@ class ChatMessage(BaseModel):
     chart_data: dict
     history: List[dict] = []
     language: str = 'en'
+    extra_chart: Optional[dict] = None
 
 
 class InterpretRequest(BaseModel):
@@ -119,7 +120,7 @@ def placement_interpretation(req: InterpretRequest):
 @app.post("/api/chat")
 def chat(req: ChatMessage):
     return StreamingResponse(
-        stream_chat(req.message, req.chart_data, req.history, req.language),
+        stream_chat(req.message, req.chart_data, req.history, req.language, req.extra_chart),
         media_type="text/plain; charset=utf-8",
     )
 
