@@ -4,8 +4,31 @@ import json
 import os
 import io
 from PIL import Image
+try:
+    from pypdf import PdfReader, PdfWriter
+    _PYPDF_AVAILABLE = True
+except ImportError:
+    _PYPDF_AVAILABLE = False
 
 _SUPPORTED_IMAGE_MIME = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
+_MAX_PDF_PAGES = 2
+
+
+def _truncate_pdf(pdf_bytes: bytes) -> bytes:
+    if not _PYPDF_AVAILABLE:
+        return pdf_bytes
+    try:
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        if len(reader.pages) <= _MAX_PDF_PAGES:
+            return pdf_bytes
+        writer = PdfWriter()
+        for i in range(min(_MAX_PDF_PAGES, len(reader.pages))):
+            writer.add_page(reader.pages[i])
+        buf = io.BytesIO()
+        writer.write(buf)
+        return buf.getvalue()
+    except Exception:
+        return pdf_bytes
 
 
 def _normalize_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str]:
@@ -66,6 +89,7 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
     is_pdf = mime_type.lower() == 'application/pdf'
 
     if is_pdf:
+        image_bytes = _truncate_pdf(image_bytes)
         b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
         file_block = {
             "type": "document",
