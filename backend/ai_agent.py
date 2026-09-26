@@ -276,7 +276,7 @@ Ascendant: {asc.get('sign')} {asc.get('degree')}°
 
 Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu.""" + _lang_instruction(language)
     messages = history + [{"role": "user", "content": message}]
-    return _stream_claude(system, messages, 8000)
+    return _stream_claude(system, messages, 3000)
 
 
 LESSONS = [
