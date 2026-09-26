@@ -14,9 +14,13 @@ def _make_client() -> anthropic.Anthropic:
     return anthropic.Anthropic(api_key=_api_key, base_url="https://api.anthropic.com")
 
 
+def _cached_system(system: str) -> list:
+    return [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+
+
 def _call_claude(system: str, messages: list, max_tokens: int) -> str:
     resp = _make_client().messages.create(
-        model=MODEL, max_tokens=max_tokens, system=system, messages=messages
+        model=MODEL, max_tokens=max_tokens, system=_cached_system(system), messages=messages
     )
     return next((block.text for block in resp.content if getattr(block, 'type', '') == 'text'), '')
 
@@ -30,7 +34,7 @@ def _lang_instruction(language: str) -> str:
 def _stream_claude(system: str, messages: list, max_tokens: int):
     try:
         with _make_client().messages.stream(
-            model=MODEL, max_tokens=max_tokens, system=system, messages=messages
+            model=MODEL, max_tokens=max_tokens, system=_cached_system(system), messages=messages
         ) as stream:
             has_content = False
             for chunk in stream.text_stream:
