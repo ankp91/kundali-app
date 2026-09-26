@@ -18,7 +18,7 @@ def _call_claude(system: str, messages: list, max_tokens: int) -> str:
     resp = _make_client().messages.create(
         model=MODEL, max_tokens=max_tokens, system=system, messages=messages
     )
-    return resp.content[0].text
+    return next((block.text for block in resp.content if hasattr(block, 'text')), '')
 
 
 def _lang_instruction(language: str) -> str:

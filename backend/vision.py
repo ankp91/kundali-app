@@ -101,7 +101,11 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
             )
         raise
 
-    text = message.content[0].text.strip()
+    # Sonnet 5 may return a ThinkingBlock before the TextBlock — find the first text block
+    raw = next((block.text for block in message.content if hasattr(block, 'text')), None)
+    if not raw:
+        raise ValueError("No text in response")
+    text = raw.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
         if text.startswith("json"):
