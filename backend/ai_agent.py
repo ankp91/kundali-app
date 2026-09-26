@@ -28,11 +28,18 @@ def _lang_instruction(language: str) -> str:
 
 
 def _stream_claude(system: str, messages: list, max_tokens: int):
-    with _make_client().messages.stream(
-        model=MODEL, max_tokens=max_tokens, system=system, messages=messages
-    ) as stream:
-        for chunk in stream.text_stream:
-            yield chunk
+    try:
+        with _make_client().messages.stream(
+            model=MODEL, max_tokens=max_tokens, system=system, messages=messages
+        ) as stream:
+            has_content = False
+            for chunk in stream.text_stream:
+                has_content = True
+                yield chunk
+            if not has_content:
+                yield "I'm having trouble generating a response right now. Please try again in a moment."
+    except Exception as e:
+        yield f"Error from AI: {e}"
 
 SYSTEM_INTERPRET = """You are Jyotish Guru, an expert Vedic astrologer with deep mastery of TWO traditions — Parashari Jyotish AND Bhrigu Samhita. Always weave both frameworks into your readings.
 
@@ -269,7 +276,7 @@ Ascendant: {asc.get('sign')} {asc.get('degree')}°
 
 Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu.""" + _lang_instruction(language)
     messages = history + [{"role": "user", "content": message}]
-    return _stream_claude(system, messages, 2000)
+    return _stream_claude(system, messages, 8000)
 
 
 LESSONS = [

@@ -59,6 +59,15 @@ export default function ChatBot({ chartData }: Props) {
           return updated
         })
       }
+      // If stream closed with no content, show error
+      setMessages(prev => {
+        const updated = [...prev]
+        const last = updated[updated.length - 1]
+        if (last.role === 'assistant' && !last.content.trim()) {
+          updated[updated.length - 1] = { role: 'assistant', content: t.chat.error }
+        }
+        return updated
+      })
     } catch {
       setMessages(prev => {
         const updated = [...prev]
