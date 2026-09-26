@@ -81,7 +81,7 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
 
     try:
         message = client.messages.create(
-            model="claude-sonnet-5",
+            model="claude-sonnet-4-6",
             max_tokens=2000,
             messages=[{
                 "role": "user",
@@ -101,10 +101,17 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
             )
         raise
 
-    # Sonnet 5 prepends ThinkingBlock(s) — find the first block with type='text'
-    raw = next((block.text for block in message.content if getattr(block, 'type', '') == 'text'), None)
+    # Find the first TextBlock — Sonnet 5 may prepend ThinkingBlock(s)
+    raw = None
+    for block in message.content:
+        btype = getattr(block, 'type', '')
+        if btype == 'text':
+            raw = getattr(block, 'text', None)
+            if raw:
+                break
     if not raw:
-        raise ValueError("No text in response")
+        block_summary = [(getattr(b, 'type', '?'), type(b).__name__) for b in message.content]
+        raise ValueError(f"No text block in response. Blocks received: {block_summary}")
     text = raw.strip()
     if text.startswith("```"):
         text = text.split("```")[1]
