@@ -101,8 +101,8 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
             )
         raise
 
-    # Sonnet 5 may return a ThinkingBlock before the TextBlock — find the first text block
-    raw = next((block.text for block in message.content if hasattr(block, 'text')), None)
+    # Sonnet 5 prepends ThinkingBlock(s) — find the first block with type='text'
+    raw = next((block.text for block in message.content if getattr(block, 'type', '') == 'text'), None)
     if not raw:
         raise ValueError("No text in response")
     text = raw.strip()
