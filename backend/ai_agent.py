@@ -1,17 +1,23 @@
 import anthropic
+import google.generativeai as genai
 import os
 from typing import Optional
 from datetime import datetime
 
-MODEL = "claude-sonnet-4-6"
+# Claude — used only for full chart interpretation (premium quality)
+CLAUDE_MODEL = "claude-sonnet-4-6"
+_anthropic_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
 
-# Prefer the personal direct Anthropic key; fall back to the work key
-_api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
+# Gemini Flash — used for chat, placement, divisional (free tier, 1500 req/day)
+GEMINI_MODEL = "gemini-2.0-flash"
+_gemini_key = os.environ.get("GOOGLE_AI_API_KEY")
+
+# Legacy alias used by _call_claude
+MODEL = CLAUDE_MODEL
 
 
 def _make_client() -> anthropic.Anthropic:
-    # Explicitly set base_url to bypass ANTHROPIC_BASE_URL env var (Salesforce proxy)
-    return anthropic.Anthropic(api_key=_api_key, base_url="https://api.anthropic.com")
+    return anthropic.Anthropic(api_key=_anthropic_key, base_url="https://api.anthropic.com")
 
 
 def _cached_system(system: str) -> list:
@@ -44,6 +50,40 @@ def _stream_claude(system: str, messages: list, max_tokens: int):
                 yield "I'm having trouble generating a response right now. Please try again in a moment."
     except Exception as e:
         yield f"Error from AI: {e}"
+
+
+def _stream_gemini(system: str, messages: list, max_tokens: int):
+    try:
+        genai.configure(api_key=_gemini_key)
+        model = genai.GenerativeModel(
+            model_name=GEMINI_MODEL,
+            system_instruction=system,
+        )
+        # Convert Anthropic message format to Gemini format
+        gemini_history = []
+        for m in messages[:-1]:
+            role = "model" if m["role"] == "assistant" else "user"
+            gemini_history.append({"role": role, "parts": [m["content"]]})
+        last_message = messages[-1]["content"] if messages else ""
+
+        gen_config = {"max_output_tokens": max_tokens}
+        has_content = False
+        if gemini_history:
+            chat = model.start_chat(history=gemini_history)
+            response = chat.send_message(last_message, stream=True, generation_config=gen_config)
+        else:
+            response = model.generate_content(last_message, stream=True, generation_config=gen_config)
+
+        for chunk in response:
+            text = getattr(chunk, 'text', None)
+            if text:
+                has_content = True
+                yield text
+        if not has_content:
+            yield "I'm having trouble generating a response right now. Please try again in a moment."
+    except Exception as e:
+        yield f"Error from AI: {e}"
+
 
 SYSTEM_INTERPRET = """You are Jyotish Guru, an expert Vedic astrologer with deep mastery of TWO traditions — Parashari Jyotish AND Bhrigu Samhita. Always weave both frameworks into your readings.
 
@@ -133,7 +173,7 @@ def interpret_placement(planet: str, sign: str, house: int, chart_context: dict)
 
 def stream_placement(planet: str, sign: str, house: int, chart_context: dict, language: str = 'en'):
     msg = _placement_msg(planet, sign, house, chart_context) + _lang_instruction(language)
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
+    return _stream_gemini(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
 def interpret_full_chart(chart_data: dict) -> str:
@@ -304,7 +344,7 @@ Ascendant: {asc.get('sign')} {asc.get('degree')}°
 
 Apply both Parashari AND Bhrigu Samhita frameworks. For time-sensitive questions, always mention the current Jupiter transit position and whether Jupiter is approaching the Bhrigu Bindu.""" + _lang_instruction(language)
     messages = history + [{"role": "user", "content": message}]
-    return _stream_claude(system, messages, 3000)
+    return _stream_gemini(system, messages, 3000)
 
 
 LESSONS = [
@@ -723,7 +763,7 @@ Interpretation focus (cover all of these):
 
 Give a warm, personalised 4-5 paragraph reading. Reference specific planetary placements from the chart above. Blend Parashari structure with Bhrigu karmic depth. About 400 words.""" + _lang_instruction(language)
 
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
+    return _stream_gemini(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
 def interpret_match(match_data: dict, language: str = 'en') -> str:

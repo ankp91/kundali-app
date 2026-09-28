@@ -1,39 +1,17 @@
-import anthropic
 import base64
 import json
 import os
 import io
+import google.generativeai as genai
 from PIL import Image
-try:
-    from pypdf import PdfReader, PdfWriter
-    _PYPDF_AVAILABLE = True
-except ImportError:
-    _PYPDF_AVAILABLE = False
 
-_SUPPORTED_IMAGE_MIME = {'image/jpeg', 'image/png', 'image/gif', 'image/webp'}
-_MAX_PDF_PAGES = 3
+_SUPPORTED_MIME = {
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+    'image/heic', 'image/heif', 'application/pdf',
+}
 
 
-def _truncate_pdf(pdf_bytes: bytes) -> bytes:
-    if not _PYPDF_AVAILABLE:
-        return pdf_bytes
-    try:
-        reader = PdfReader(io.BytesIO(pdf_bytes))
-        if len(reader.pages) <= _MAX_PDF_PAGES:
-            return pdf_bytes
-        writer = PdfWriter()
-        for i in range(min(_MAX_PDF_PAGES, len(reader.pages))):
-            writer.add_page(reader.pages[i])
-        buf = io.BytesIO()
-        writer.write(buf)
-        return buf.getvalue()
-    except Exception:
-        return pdf_bytes
-
-
-def _normalize_image(image_bytes: bytes, mime_type: str) -> tuple[bytes, str]:
-    if mime_type.lower() in _SUPPORTED_IMAGE_MIME:
-        return image_bytes, mime_type
+def _to_jpeg(image_bytes: bytes) -> tuple[bytes, str]:
     try:
         img = Image.open(io.BytesIO(image_bytes))
         if img.mode in ('RGBA', 'P', 'LA'):
@@ -83,62 +61,32 @@ If a value is unclear or not visible, use null. Return ONLY valid JSON, no other
 
 
 def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
-    vision_api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
-    client = anthropic.Anthropic(api_key=vision_api_key)
+    api_key = os.environ.get("GOOGLE_AI_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_AI_API_KEY not configured")
 
-    is_pdf = mime_type.lower() == 'application/pdf'
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel("gemini-2.0-flash")
 
-    if is_pdf:
-        image_bytes = _truncate_pdf(image_bytes)
-        b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
-        file_block = {
-            "type": "document",
-            "source": {"type": "base64", "media_type": "application/pdf", "data": b64},
-        }
-    else:
-        image_bytes, mime_type = _normalize_image(image_bytes, mime_type)
-        b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
-        file_block = {
-            "type": "image",
-            "source": {"type": "base64", "media_type": mime_type, "data": b64},
-        }
+    if mime_type.lower() not in _SUPPORTED_MIME:
+        image_bytes, mime_type = _to_jpeg(image_bytes)
+
+    b64 = base64.b64encode(image_bytes).decode()
 
     try:
-        message = client.messages.create(
-            model="claude-sonnet-4-6",
-            max_tokens=2000,
-            messages=[{
-                "role": "user",
-                "content": [file_block, {"type": "text", "text": PROMPT}],
-            }]
-        )
-    except anthropic.AuthenticationError:
-        raise ValueError(
-            "Upload requires a personal Anthropic API key. "
-            "Get a free key at console.anthropic.com and add it as ANTHROPIC_VISION_API_KEY."
-        )
+        response = model.generate_content([
+            {"mime_type": mime_type, "data": b64},
+            PROMPT,
+        ])
     except Exception as e:
-        if "model" in str(e).lower() or "endpoint" in str(e).lower() or "bedrock" in str(e).lower():
-            raise ValueError(
-                "Upload requires a personal Anthropic API key. "
-                "Get a free key at console.anthropic.com and add it as ANTHROPIC_VISION_API_KEY."
-            )
-        raise
+        raise ValueError(f"Vision API error: {e}")
 
-    # Find the first TextBlock — Sonnet 5 may prepend ThinkingBlock(s)
-    raw = None
-    for block in message.content:
-        btype = getattr(block, 'type', '')
-        if btype == 'text':
-            raw = getattr(block, 'text', None)
-            if raw:
-                break
+    raw = getattr(response, 'text', '').strip()
     if not raw:
-        block_summary = [(getattr(b, 'type', '?'), type(b).__name__) for b in message.content]
-        raise ValueError(f"No text block in response. Blocks received: {block_summary}")
-    text = raw.strip()
-    if text.startswith("```"):
-        text = text.split("```")[1]
-        if text.startswith("json"):
-            text = text[4:]
-    return json.loads(text.strip())
+        raise ValueError("No response from vision model — check image quality")
+
+    if raw.startswith("```"):
+        raw = raw.split("```")[1]
+        if raw.startswith("json"):
+            raw = raw[4:]
+    return json.loads(raw.strip())
