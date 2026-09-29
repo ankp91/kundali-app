@@ -66,7 +66,7 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
         raise ValueError("GOOGLE_AI_API_KEY not configured")
 
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.0-flash")
+    model = genai.GenerativeModel("gemini-3.8-flash")
 
     if mime_type.lower() not in _SUPPORTED_MIME:
         image_bytes, mime_type = _to_jpeg(image_bytes)

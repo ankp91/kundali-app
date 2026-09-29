@@ -9,7 +9,7 @@ CLAUDE_MODEL = "claude-sonnet-4-6"
 _anthropic_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
 
 # Gemini Flash — used for chat, placement, divisional (free tier, 1500 req/day)
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-3.8-flash"
 _gemini_key = os.environ.get("GOOGLE_AI_API_KEY")
 
 # Legacy alias used by _call_claude
