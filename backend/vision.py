@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import io
+import anthropic
 import google.generativeai as genai
 from PIL import Image
 
@@ -61,27 +62,33 @@ If a value is unclear or not visible, use null. Return ONLY valid JSON, no other
 
 
 def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
-    api_key = os.environ.get("GOOGLE_AI_API_KEY")
+    api_key = os.environ.get("ANTHROPIC_VISION_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        raise ValueError("GOOGLE_AI_API_KEY not configured")
+        raise ValueError("ANTHROPIC_VISION_API_KEY not configured")
 
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-3.8-flash")
+    client = anthropic.Anthropic(api_key=api_key, base_url="https://api.anthropic.com")
+    mt = mime_type.lower()
 
-    if mime_type.lower() not in _SUPPORTED_MIME:
-        image_bytes, mime_type = _to_jpeg(image_bytes)
+    if mt not in _SUPPORTED_MIME:
+        image_bytes, mt = _to_jpeg(image_bytes)
 
     b64 = base64.b64encode(image_bytes).decode()
 
+    if mt == "application/pdf":
+        content_block = {"type": "document", "source": {"type": "base64", "media_type": mt, "data": b64}}
+    else:
+        content_block = {"type": "image", "source": {"type": "base64", "media_type": mt, "data": b64}}
+
     try:
-        response = model.generate_content([
-            {"mime_type": mime_type, "data": b64},
-            PROMPT,
-        ])
+        response = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": [content_block, {"type": "text", "text": PROMPT}]}],
+        )
     except Exception as e:
         raise ValueError(f"Vision API error: {e}")
 
-    raw = getattr(response, 'text', '').strip()
+    raw = next((b.text for b in response.content if getattr(b, "type", "") == "text"), "").strip()
     if not raw:
         raise ValueError("No response from vision model — check image quality")
 
