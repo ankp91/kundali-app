@@ -3,7 +3,7 @@ import json
 import os
 import io
 import anthropic
-import google.generativeai as genai
+import pypdf
 from PIL import Image
 
 _SUPPORTED_MIME = {
@@ -22,6 +22,21 @@ def _to_jpeg(image_bytes: bytes) -> tuple[bytes, str]:
         return buf.getvalue(), 'image/jpeg'
     except Exception:
         return image_bytes, 'image/jpeg'
+
+
+def _truncate_pdf(data: bytes, max_pages: int = 3) -> bytes:
+    try:
+        reader = pypdf.PdfReader(io.BytesIO(data))
+        if len(reader.pages) <= max_pages:
+            return data
+        writer = pypdf.PdfWriter()
+        for page in reader.pages[:max_pages]:
+            writer.add_page(page)
+        buf = io.BytesIO()
+        writer.write(buf)
+        return buf.getvalue()
+    except Exception:
+        return data
 
 
 PROMPT = """You are an expert Vedic astrologer. Analyze this kundali (birth chart).
@@ -66,24 +81,32 @@ def parse_kundali_image(image_bytes: bytes, mime_type: str) -> dict:
     if not api_key:
         raise ValueError("ANTHROPIC_VISION_API_KEY not configured")
 
-    client = anthropic.Anthropic(api_key=api_key, base_url="https://api.anthropic.com")
+    client = anthropic.Anthropic(
+        api_key=api_key,
+        base_url="https://api.anthropic.com",
+        timeout=90.0,
+    )
     mt = mime_type.lower()
 
     if mt not in _SUPPORTED_MIME:
         image_bytes, mt = _to_jpeg(image_bytes)
 
-    b64 = base64.b64encode(image_bytes).decode()
-
     if mt == "application/pdf":
+        image_bytes = _truncate_pdf(image_bytes, max_pages=3)
+        b64 = base64.b64encode(image_bytes).decode()
         content_block = {"type": "document", "source": {"type": "base64", "media_type": mt, "data": b64}}
+        extra_headers = {"anthropic-beta": "pdfs-2024-09-25"}
     else:
+        b64 = base64.b64encode(image_bytes).decode()
         content_block = {"type": "image", "source": {"type": "base64", "media_type": mt, "data": b64}}
+        extra_headers = {}
 
     try:
         response = client.messages.create(
             model="claude-sonnet-4-6",
             max_tokens=2000,
             messages=[{"role": "user", "content": [content_block, {"type": "text", "text": PROMPT}]}],
+            extra_headers=extra_headers,
         )
     except Exception as e:
         raise ValueError(f"Vision API error: {e}")
