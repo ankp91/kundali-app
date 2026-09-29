@@ -262,7 +262,7 @@ Cover:
 6. Bhrigu Bindu — which house/sign it falls in and when Jupiter will next transit it
 
 Be warm, constructive and insightful. About 600 words.""" + _lang_instruction(language)
-    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2500)
+    return _stream_claude(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 5000)
 
 
 def chat_with_chart(message: str, chart_data: dict, history: list) -> str:
