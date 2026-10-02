@@ -11,6 +11,7 @@ load_dotenv()
 from astro import calculate_kundali
 from vision import parse_kundali_image
 from matching import calculate_match
+from panchang import calculate_panchang, geocode_place
 from ai_agent import (
     interpret_full_chart, interpret_placement,
     chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
@@ -163,6 +164,22 @@ def match_charts(data: MatchInput):
             data.birth_date2, data.birth_time2, data.birth_place2, data.name2,
         )
         return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/geocode")
+def geocode(q: str):
+    try:
+        return geocode_place(q)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/panchang")
+def panchang(date: str, lat: float, lon: float, tz: str):
+    try:
+        return calculate_panchang(date, lat, lon, tz)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

@@ -1,6 +1,6 @@
 export const translations = {
   en: {
-    nav: { learn: 'Learn', match: 'Match' },
+    nav: { learn: 'Learn', match: 'Match', panchang: 'Panchang' },
     home: {
       subtitle: 'Your Vedic Birth Chart',
       desc: 'Generate your kundali from birth details, or upload an existing chart — then explore AI-powered interpretations and learn Jyotish.',
@@ -67,7 +67,7 @@ export const translations = {
     },
   },
   hi: {
-    nav: { learn: 'सीखें', match: 'मिलान' },
+    nav: { learn: 'सीखें', match: 'मिलान', panchang: 'पंचांग' },
     home: {
       subtitle: 'आपकी वैदिक जन्म कुंडली',
       desc: 'जन्म विवरण से अपनी कुंडली बनाएं, या मौजूदा चार्ट अपलोड करें — फिर AI-आधारित विश्लेषण और ज्योतिष सीखें।',
