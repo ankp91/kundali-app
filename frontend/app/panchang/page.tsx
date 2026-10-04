@@ -161,7 +161,7 @@ export default function PanchangPage() {
               <input
                 type="date" value={date}
                 onChange={e => onDateChange(e.target.value)}
-                className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-gold-400"
+                className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
               />
             </div>
             <div className="flex-[2]">
@@ -172,7 +172,7 @@ export default function PanchangPage() {
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchLocation()}
                   placeholder="Search city (e.g. Mumbai, India)"
-                  className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400"
+                  className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
                 />
                 <button
                   onClick={searchLocation} disabled={geoLoading}

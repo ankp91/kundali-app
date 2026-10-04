@@ -60,7 +60,7 @@ HORA_PLANETS   = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars']
 HORA_DAY_START = [0, 3, 6, 2, 5, 1, 4]
 
 # Inauspicious kalam slot numbers (1-indexed out of 8 equal day slots, Sun=index 0)
-RAHU_KALAM_SLOT = [8, 2, 7, 5, 6, 3, 4]   # Sun=8, Mon=2, Tue=7, Wed=5, Thu=6, Fri=3, Sat=4
+RAHU_KALAM_SLOT = [4, 2, 7, 5, 6, 3, 8]   # Sun=4, Mon=2, Tue=7, Wed=5, Thu=6, Fri=3, Sat=8
 YAMAGANDA_SLOT  = [5, 4, 3, 2, 1, 7, 6]   # Sun=5, Mon=4, Tue=3, Wed=2, Thu=1, Fri=7, Sat=6
 GULIKAI_SLOT    = [7, 6, 5, 4, 3, 2, 1]   # Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, Fri=2, Sat=1
 
