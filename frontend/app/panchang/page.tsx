@@ -155,13 +155,13 @@ export default function PanchangPage() {
 
         {/* Controls */}
         <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
+          <div className="flex flex-col sm:flex-row gap-3 overflow-hidden">
+            <div className="flex-1 min-w-0">
               <label className="text-xs text-saffron-400/70 block mb-1">Date</label>
               <input
                 type="date" value={date}
                 onChange={e => onDateChange(e.target.value)}
-                className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
+                className="w-full max-w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
               />
             </div>
             <div className="flex-[2]">
