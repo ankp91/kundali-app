@@ -21,13 +21,19 @@ interface Props {
   d7: DivisionalData
   d12: DivisionalData
   fullChart: Record<string, unknown>
+  d2?: DivisionalData
+  d3?: DivisionalData
+  d60?: DivisionalData
 }
 
 const CHARTS = [
-  { key: 'd9' as const,  id: 'chart-d9',  label: 'D9',  title: 'Navamsa',     sub: 'Marriage · Spiritual self · Dharma' },
-  { key: 'd10' as const, id: 'chart-d10', label: 'D10', title: 'Dasamsa',     sub: 'Career · Profession · Public life' },
-  { key: 'd7' as const,  id: 'chart-d7',  label: 'D7',  title: 'Saptamsa',    sub: 'Children · Progeny · Creativity' },
-  { key: 'd12' as const, id: 'chart-d12', label: 'D12', title: 'Dwadasamsa',  sub: 'Parents · Ancestry · Karma' },
+  { key: 'd9' as const,  id: 'chart-d9',  label: 'D9',  title: 'Navamsa',       sub: 'Marriage · Spiritual self · Dharma' },
+  { key: 'd10' as const, id: 'chart-d10', label: 'D10', title: 'Dasamsa',       sub: 'Career · Profession · Public life' },
+  { key: 'd7' as const,  id: 'chart-d7',  label: 'D7',  title: 'Saptamsa',      sub: 'Children · Progeny · Creativity' },
+  { key: 'd12' as const, id: 'chart-d12', label: 'D12', title: 'Dwadasamsa',    sub: 'Parents · Ancestry · Karma' },
+  { key: 'd2' as const,  id: 'chart-d2',  label: 'D2',  title: 'Hora',          sub: 'Wealth · Income · Financial patterns' },
+  { key: 'd3' as const,  id: 'chart-d3',  label: 'D3',  title: 'Drekkana',      sub: 'Siblings · Courage · Short journeys' },
+  { key: 'd60' as const, id: 'chart-d60', label: 'D60', title: 'Shashtiamsha',  sub: 'Karma · Past life · Soul essence' },
 ]
 
 function toHousesNum(houses: Record<number | string, DivHouseData>) {
@@ -41,14 +47,15 @@ function toHousesNum(houses: Record<number | string, DivHouseData>) {
 const isApiError = (s: string) =>
   s.startsWith('Error:') || s.includes('could not process') || s.includes('Sorry,')
 
-export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props) {
+export default function DivisionalCharts({ d9, d10, d7, d12, fullChart, d2, d3, d60 }: Props) {
   const { lang } = useLanguage()
-  const data = { d9, d10, d7, d12 }
+  const data: Record<string, DivisionalData | undefined> = { d9, d10, d7, d12, d2, d3, d60 }
   const [interpretations, setInterpretations] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState<Record<string, boolean>>({})
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
 
-  const interpret = async (key: string, divData: DivisionalData) => {
+  const interpret = async (key: string, divData: DivisionalData | undefined) => {
+    if (!divData) return
     if (interpretations[key] && !isApiError(interpretations[key])) {
       setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
       return
@@ -98,6 +105,7 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
       {CHARTS.map(({ key, id, label, title, sub }) => {
         const chart = data[key]
+        if (!chart) return null
         const isExpanded = expanded[key]
         const isLoading = loading[key]
         const text = interpretations[key]
@@ -114,7 +122,7 @@ export default function DivisionalCharts({ d9, d10, d7, d12, fullChart }: Props)
                   <p className="text-gray-500 text-xs mt-0.5">{sub}</p>
                 </div>
                 <button
-                  onClick={() => interpret(key, chart)}
+                  onClick={() => chart && interpret(key, chart)}
                   className="flex-shrink-0 text-xs px-3 py-1 rounded-lg border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 transition"
                 >
                   {isLoading ? '...' : (text && isApiError(text)) ? 'Retry' : text ? (isExpanded ? 'Hide' : 'Show reading') : 'Interpret'}

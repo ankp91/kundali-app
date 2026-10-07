@@ -52,6 +52,456 @@ def _dwadasamsa_sign(lon: float) -> int:
     return (s + int((lon % 30) / 2.5)) % 12
 
 
+def _hora_sign(lon: float) -> int:
+    s = int(lon / 30)
+    deg = lon % 30
+    # even signs (0,2,4,6,8,10): 0-15=Leo(4), 15-30=Cancer(3)
+    # odd signs (1,3,5,7,9,11): 0-15=Cancer(3), 15-30=Leo(4)
+    if s % 2 == 0:
+        return 4 if deg < 15 else 3
+    else:
+        return 3 if deg < 15 else 4
+
+
+def _drekkana_sign(lon: float) -> int:
+    s = int(lon / 30)
+    n = int((lon % 30) / 10)   # 0,1,2
+    return (s + n * 4) % 12    # same, 5th, 9th sign
+
+
+def _shashtiamsha_sign(lon: float) -> int:
+    s = int(lon / 30)
+    part = int((lon % 30) * 2)  # 0-59
+    return part % 12 if s % 2 == 0 else (part + 6) % 12
+
+
+SIGN_LORDS = ["Mars","Venus","Mercury","Moon","Sun","Mercury",
+              "Venus","Mars","Jupiter","Saturn","Saturn","Jupiter"]
+
+EXALTED_SIGNS = {
+    "Sun": 0, "Moon": 1, "Mars": 9, "Mercury": 5,
+    "Jupiter": 3, "Venus": 11, "Saturn": 6
+}
+OWN_SIGNS = {
+    "Sun": [4], "Moon": [3], "Mars": [0, 7],
+    "Mercury": [2, 5], "Jupiter": [8, 11],
+    "Venus": [1, 6], "Saturn": [9, 10]
+}
+
+
+def detect_yogas(planet_data: dict, houses: dict, asc_sign_num: int) -> list:
+    yogas = []
+    p = planet_data
+
+    def house_of(name):
+        return p[name]["house"] if name in p else None
+
+    def sign_of(name):
+        return p[name]["sign_num"] if name in p else None
+
+    # Gaja Kesari: Jupiter in kendra (1,4,7,10) from Moon
+    if "Jupiter" in p and "Moon" in p:
+        diff = (p["Jupiter"]["house"] - p["Moon"]["house"]) % 12
+        if diff in (0, 3, 6, 9):
+            yogas.append({
+                "name": "Gaja Kesari Yoga",
+                "description": "Jupiter in a kendra house from Moon — grants elephant-lion strength, wisdom, fame, and prosperity.",
+                "strength": "strong",
+                "planets": ["Jupiter", "Moon"]
+            })
+
+    # Budha-Aditya: Sun & Mercury in same sign
+    if "Sun" in p and "Mercury" in p and sign_of("Sun") == sign_of("Mercury"):
+        yogas.append({
+            "name": "Budha-Aditya Yoga",
+            "description": "Sun and Mercury together — grants sharp intellect, good communication, government favour, and success in business.",
+            "strength": "moderate",
+            "planets": ["Sun", "Mercury"]
+        })
+
+    # Chandra-Mangala: Moon & Mars conjunct
+    if "Moon" in p and "Mars" in p and sign_of("Moon") == sign_of("Mars"):
+        yogas.append({
+            "name": "Chandra-Mangala Yoga",
+            "description": "Moon and Mars together — grants wealth through bold action, entrepreneurial spirit, and emotional courage.",
+            "strength": "moderate",
+            "planets": ["Moon", "Mars"]
+        })
+
+    # Pancha Mahapurusha Yogas — planet in own/exalted sign in kendra
+    mahapurusha = [
+        ("Mars",    "Ruchaka Yoga",  "Exceptional physical strength, courage, land ownership — Ruchaka Mahapurusha."),
+        ("Mercury", "Bhadra Yoga",   "Excellent intellect, communication mastery, business acumen — Bhadra Mahapurusha."),
+        ("Jupiter", "Hamsa Yoga",    "Wisdom, spirituality, great fortune, dharmic life — Hamsa Mahapurusha."),
+        ("Venus",   "Malavya Yoga",  "Beauty, luxury, artistic genius, happy relationships — Malavya Mahapurusha."),
+        ("Saturn",  "Sasa Yoga",     "Discipline, authority, service leadership, lasting achievements — Sasa Mahapurusha."),
+    ]
+    for planet, yoga_name, desc in mahapurusha:
+        if planet in p:
+            sign = sign_of(planet)
+            house = house_of(planet)
+            in_own = sign in OWN_SIGNS.get(planet, [])
+            in_exalted = sign == EXALTED_SIGNS.get(planet)
+            in_kendra = house in (1, 4, 7, 10)
+            if (in_own or in_exalted) and in_kendra:
+                yogas.append({
+                    "name": yoga_name,
+                    "description": desc,
+                    "strength": "strong",
+                    "planets": [planet]
+                })
+
+    # Kemadruma Yoga: no planets in 2nd or 12th sign from Moon (sign-wise)
+    if "Moon" in p:
+        moon_sign = sign_of("Moon")
+        adjacent_signs = {(moon_sign + 1) % 12, (moon_sign - 1) % 12}
+        other_planets = [name for name in p if name not in ("Moon", "Rahu", "Ketu")]
+        has_adjacent = any(sign_of(name) in adjacent_signs for name in other_planets)
+        if not has_adjacent:
+            yogas.append({
+                "name": "Kemadruma Yoga",
+                "description": "No planets in 2nd or 12th from Moon — indicates periods of self-reliance, emotional isolation, or unconventional success without support.",
+                "strength": "challenging",
+                "planets": ["Moon"]
+            })
+
+    # Raj Yoga: lord of kendra (1,4,7,10) + lord of trikona (1,5,9) conjunct
+    kendra_houses = {1, 4, 7, 10}
+    trikona_houses = {1, 5, 9}
+    kendra_lords = set()
+    trikona_lords = set()
+    for h in range(1, 13):
+        sign_idx = (asc_sign_num + h - 1) % 12
+        lord = SIGN_LORDS[sign_idx]
+        if lord in ("Rahu", "Ketu"):
+            continue
+        if h in kendra_houses:
+            kendra_lords.add(lord)
+        if h in trikona_houses:
+            trikona_lords.add(lord)
+    for kl in kendra_lords:
+        for tl in trikona_lords:
+            if kl != tl and kl in p and tl in p:
+                if sign_of(kl) == sign_of(tl):
+                    yogas.append({
+                        "name": f"Raj Yoga ({kl}–{tl})",
+                        "description": f"Lords of a kendra ({kl}) and trikona ({tl}) are conjunct — grants authority, power, and significant rise in status.",
+                        "strength": "strong",
+                        "planets": [kl, tl]
+                    })
+
+    # Dhana Yoga: 2nd lord + 11th lord conjunct
+    second_sign = (asc_sign_num + 1) % 12
+    eleventh_sign = (asc_sign_num + 10) % 12
+    lord_2nd = SIGN_LORDS[second_sign]
+    lord_11th = SIGN_LORDS[eleventh_sign]
+    if lord_2nd in p and lord_11th in p and lord_2nd != lord_11th:
+        if sign_of(lord_2nd) == sign_of(lord_11th):
+            yogas.append({
+                "name": "Dhana Yoga",
+                "description": f"Lords of 2nd ({lord_2nd}) and 11th ({lord_11th}) houses conjunct — powerful wealth accumulation yoga.",
+                "strength": "strong",
+                "planets": [lord_2nd, lord_11th]
+            })
+
+    # Viparita Raja Yoga: 6th/8th/12th lords in another dusthana house
+    dusthana_houses = {6, 8, 12}
+    dusthana_lords = {}
+    for h in dusthana_houses:
+        sign_idx = (asc_sign_num + h - 1) % 12
+        lord = SIGN_LORDS[sign_idx]
+        dusthana_lords[h] = lord
+    for h, lord in dusthana_lords.items():
+        if lord in p:
+            if house_of(lord) in dusthana_houses and house_of(lord) != h:
+                yogas.append({
+                    "name": "Viparita Raja Yoga",
+                    "description": f"{lord} (lord of {h}th) placed in another dusthana house — rise through adversity; success comes through challenges and overcoming obstacles.",
+                    "strength": "moderate",
+                    "planets": [lord]
+                })
+                break
+
+    return yogas
+
+
+def get_current_transits(natal_asc_sign_num: int) -> dict:
+    today = datetime.now(pytz.utc)
+    jd = swe.julday(today.year, today.month, today.day,
+                    today.hour + today.minute / 60.0)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    flags = swe.FLG_SIDEREAL | swe.FLG_SPEED
+    transits = {}
+    for pid, pname in PLANETS.items():
+        pos, _ = swe.calc_ut(jd, pid, flags)
+        lon = pos[0] % 360
+        sign_num = int(lon / 30)
+        degree = lon % 30
+        house = ((sign_num - natal_asc_sign_num) % 12) + 1
+        nak_idx = int(lon / (360 / 27))
+        transits[pname] = {
+            "longitude": round(lon, 4),
+            "sign": SIGNS[sign_num],
+            "sign_hindi": SIGNS_HINDI[sign_num],
+            "sign_num": sign_num,
+            "degree": round(degree, 2),
+            "house": house,
+            "nakshatra": NAKSHATRAS[nak_idx],
+            "is_retrograde": pos[3] < 0 if len(pos) > 3 else False,
+        }
+    rahu = transits["Rahu"]
+    ketu_lon = (rahu["longitude"] + 180) % 360
+    ketu_sign = int(ketu_lon / 30)
+    transits["Ketu"] = {
+        "longitude": round(ketu_lon, 4),
+        "sign": SIGNS[ketu_sign],
+        "sign_hindi": SIGNS_HINDI[ketu_sign],
+        "sign_num": ketu_sign,
+        "degree": round(ketu_lon % 30, 2),
+        "house": ((ketu_sign - natal_asc_sign_num) % 12) + 1,
+        "nakshatra": NAKSHATRAS[int(ketu_lon / (360 / 27))],
+        "is_retrograde": False,
+    }
+    return {
+        "date": today.strftime("%Y-%m-%d"),
+        "planets": transits,
+    }
+
+
+_AV_TABLES = {
+    "Sun": {
+        "Sun":     [1,2,4,7,8,9,10,11],
+        "Moon":    [3,6,10,11],
+        "Mars":    [1,2,4,7,8,9,10,11],
+        "Mercury": [3,5,6,9,10,11,12],
+        "Jupiter": [5,6,9,11],
+        "Venus":   [6,7,12],
+        "Saturn":  [1,2,4,7,8,9,10,11],
+        "Lagna":   [3,4,6,10,11,12],
+    },
+    "Moon": {
+        "Sun":     [3,6,7,8,10,11],
+        "Moon":    [1,3,6,7,10,11],
+        "Mars":    [2,3,5,6,9,10,11],
+        "Mercury": [1,3,4,5,7,8,10,11],
+        "Jupiter": [1,4,7,8,10,11,12],
+        "Venus":   [3,4,5,7,9,10,11],
+        "Saturn":  [3,5,6,11],
+        "Lagna":   [3,6,10,11],
+    },
+    "Mars": {
+        "Sun":     [3,5,6,10,11],
+        "Moon":    [3,6,11],
+        "Mars":    [1,2,4,7,8,9,10,11],
+        "Mercury": [3,5,6,11],
+        "Jupiter": [6,10,11,12],
+        "Venus":   [6,8,11,12],
+        "Saturn":  [1,4,7,8,9,10,11],
+        "Lagna":   [1,3,6,10,11],
+    },
+    "Mercury": {
+        "Sun":     [5,6,9,11,12],
+        "Moon":    [2,4,6,8,10,11],
+        "Mars":    [1,2,4,7,8,9,10,11],
+        "Mercury": [1,3,5,6,9,10,11,12],
+        "Jupiter": [6,8,11,12],
+        "Venus":   [1,2,3,4,5,8,9,11],
+        "Saturn":  [1,2,4,7,8,9,10,11],
+        "Lagna":   [1,2,4,6,8,10,11],
+    },
+    "Jupiter": {
+        "Sun":     [1,2,3,4,7,8,9,10,11],
+        "Moon":    [2,5,7,9,11],
+        "Mars":    [1,2,4,7,8,9,10,11],
+        "Mercury": [1,2,4,5,6,9,10,11],
+        "Jupiter": [1,2,3,4,7,8,10,11],
+        "Venus":   [2,5,6,9,10,11],
+        "Saturn":  [3,5,6,12],
+        "Lagna":   [1,2,4,5,6,7,9,10,11],
+    },
+    "Venus": {
+        "Sun":     [8,11,12],
+        "Moon":    [1,2,3,4,5,8,9,11,12],
+        "Mars":    [3,4,6,9,11,12],
+        "Mercury": [3,5,6,9,11],
+        "Jupiter": [5,8,9,10,11],
+        "Venus":   [1,2,3,4,5,8,9,10,11],
+        "Saturn":  [3,4,5,8,9,10,11],
+        "Lagna":   [1,2,3,4,5,8,9,11],
+    },
+    "Saturn": {
+        "Sun":     [1,2,4,7,8,9,10,11],
+        "Moon":    [3,6,11],
+        "Mars":    [3,5,6,10,11,12],
+        "Mercury": [6,8,9,10,11,12],
+        "Jupiter": [5,6,11,12],
+        "Venus":   [6,11,12],
+        "Saturn":  [3,5,6,11],
+        "Lagna":   [1,3,4,6,10,11],
+    },
+}
+
+_AV_PLANET_ORDER = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
+
+
+def calculate_ashtakavarga(planet_data: dict, asc_sign_num: int) -> dict:
+    contributor_signs = {p: planet_data[p]["sign_num"] for p in _AV_PLANET_ORDER if p in planet_data}
+    contributor_signs["Lagna"] = asc_sign_num
+
+    result = {}
+    sarva = [0] * 12
+
+    for target_planet, table in _AV_TABLES.items():
+        if target_planet not in planet_data:
+            continue
+        sign_scores = [0] * 12
+        for sign_idx in range(12):
+            score = 0
+            for contributor, benefic_positions in table.items():
+                contrib_sign = contributor_signs.get(contributor)
+                if contrib_sign is None:
+                    continue
+                rel_pos = (sign_idx - contrib_sign) % 12 + 1
+                if rel_pos in benefic_positions:
+                    score += 1
+            sign_scores[sign_idx] = score
+        total = sum(sign_scores)
+        result[target_planet] = {
+            "sign_scores": sign_scores,
+            "signs": SIGNS,
+            "total": total,
+        }
+        for i in range(12):
+            sarva[i] += sign_scores[i]
+
+    result["sarvashtakavarga"] = {
+        "sign_scores": sarva,
+        "signs": SIGNS,
+        "total": sum(sarva),
+    }
+    return result
+
+
+def calculate_varshaphal(birth_date: str, birth_time: str, birth_place: str, year: int) -> dict:
+    lat, lon, tz_str = get_coordinates(birth_place)
+    tz = pytz.timezone(tz_str)
+    dt_str = f"{birth_date} {birth_time}"
+    local_dt = datetime.strptime(dt_str, "%Y-%m-%d %H:%M")
+    local_dt = tz.localize(local_dt)
+    utc_dt = local_dt.astimezone(pytz.utc)
+
+    jd_natal = swe.julday(utc_dt.year, utc_dt.month, utc_dt.day,
+                          utc_dt.hour + utc_dt.minute / 60.0)
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    flags = swe.FLG_SIDEREAL | swe.FLG_SPEED
+    sun_natal, _ = swe.calc_ut(jd_natal, 0, flags)
+    natal_sun_lon = sun_natal[0] % 360
+
+    birth_month = utc_dt.month
+    birth_day = utc_dt.day
+
+    jd_start = swe.julday(year, birth_month, max(1, birth_day - 2), 0)
+    jd_end = swe.julday(year, birth_month, min(28, birth_day + 2), 23)
+
+    lo, hi = jd_start, jd_end
+    for _ in range(50):
+        mid = (lo + hi) / 2
+        sun_mid, _ = swe.calc_ut(mid, 0, flags)
+        sun_lon = sun_mid[0] % 360
+        diff = (sun_lon - natal_sun_lon + 180) % 360 - 180
+        if abs(diff) < 0.0001:
+            break
+        if diff > 0:
+            hi = mid
+        else:
+            lo = mid
+
+    jd_return = (lo + hi) / 2
+
+    y, m, d, hfrac = swe.revjul(jd_return)
+    h = int(hfrac)
+    mi = int((hfrac - h) * 60)
+    return_utc = datetime(y, m, d, h, mi, tzinfo=pytz.utc)
+    return_local = return_utc.astimezone(tz)
+
+    cusps, ascmc = swe.houses(jd_return, lat, lon, b'W')
+    asc_longitude = ascmc[0]
+    ayanamsha = swe.get_ayanamsa(jd_return)
+    asc_sidereal = (asc_longitude - ayanamsha) % 360
+    asc_sign_num = int(asc_sidereal / 30)
+    asc_degree = asc_sidereal % 30
+
+    vp_planet_data = {}
+    for pid, pname in PLANETS.items():
+        pos, _ = swe.calc_ut(jd_return, pid, flags)
+        lon_sid = pos[0] % 360
+        sign_num = int(lon_sid / 30)
+        degree = lon_sid % 30
+        house_num = ((sign_num - asc_sign_num) % 12) + 1
+        nak_idx = int(lon_sid / (360 / 27))
+        nak_pada = int((lon_sid % (360 / 27)) / (360 / 27 / 4)) + 1
+        vp_planet_data[pname] = {
+            "longitude": round(lon_sid, 4),
+            "sign": SIGNS[sign_num],
+            "sign_hindi": SIGNS_HINDI[sign_num],
+            "sign_num": sign_num,
+            "degree": round(degree, 2),
+            "house": house_num,
+            "nakshatra": NAKSHATRAS[nak_idx],
+            "pada": nak_pada,
+            "is_retrograde": pos[3] < 0 if len(pos) > 3 else False,
+        }
+
+    vp_rahu = vp_planet_data["Rahu"]
+    ketu_lon = (vp_rahu["longitude"] + 180) % 360
+    ketu_sign_num = int(ketu_lon / 30)
+    vp_planet_data["Ketu"] = {
+        "longitude": round(ketu_lon, 4),
+        "sign": SIGNS[ketu_sign_num],
+        "sign_hindi": SIGNS_HINDI[ketu_sign_num],
+        "sign_num": ketu_sign_num,
+        "degree": round(ketu_lon % 30, 2),
+        "house": ((ketu_sign_num - asc_sign_num) % 12) + 1,
+        "nakshatra": NAKSHATRAS[int(ketu_lon / (360 / 27))],
+        "pada": int((ketu_lon % (360 / 27)) / (360 / 27 / 4)) + 1,
+        "is_retrograde": False,
+    }
+
+    vp_houses = {}
+    for h in range(1, 13):
+        sign_idx = (asc_sign_num + h - 1) % 12
+        vp_houses[h] = {
+            "sign": SIGNS[sign_idx],
+            "sign_hindi": SIGNS_HINDI[sign_idx],
+            "sign_num": sign_idx,
+            "planets": [p for p, d in vp_planet_data.items() if d["house"] == h]
+        }
+
+    return {
+        "year": year,
+        "return_date": return_local.strftime("%Y-%m-%d"),
+        "return_time": return_local.strftime("%H:%M"),
+        "return_datetime_utc": return_utc.strftime("%Y-%m-%d %H:%M UTC"),
+        "ascendant": {
+            "sign": SIGNS[asc_sign_num],
+            "sign_hindi": SIGNS_HINDI[asc_sign_num],
+            "sign_num": asc_sign_num,
+            "degree": round(asc_degree, 2),
+            "longitude": round(asc_sidereal, 4),
+        },
+        "planets": vp_planet_data,
+        "houses": vp_houses,
+        "birth_info": {
+            "date": birth_date,
+            "time": birth_time,
+            "place": birth_place,
+            "lat": lat,
+            "lon": lon,
+            "timezone": tz_str,
+        }
+    }
+
+
 def _build_divisional(planet_data: dict, asc_lon: float, sign_fn) -> dict:
     asc_s = sign_fn(asc_lon)
     planets = {}
@@ -74,6 +524,28 @@ def _build_divisional(planet_data: dict, asc_lon: float, sign_fn) -> dict:
         'planets': planets,
         'houses': houses,
     }
+
+
+def _calculate_antardashas(mahadasha_lord: str, mahadasha_start: str, mahadasha_years: float) -> list:
+    lord_idx = DASHA_LORDS.index(mahadasha_lord)
+    antardashas = []
+    current = datetime.strptime(mahadasha_start, "%Y-%m-%d")
+    today = datetime.now(pytz.utc).replace(tzinfo=None)
+    for i in range(9):
+        idx = (lord_idx + i) % 9
+        ad_lord = DASHA_LORDS[idx]
+        ad_years = mahadasha_years * DASHA_YEARS[idx] / 120.0
+        end = current + timedelta(days=ad_years * 365.25)
+        is_current = current <= today <= end
+        antardashas.append({
+            "lord": ad_lord,
+            "years": round(ad_years, 2),
+            "start": current.strftime("%Y-%m-%d"),
+            "end": end.strftime("%Y-%m-%d"),
+            "is_current": is_current,
+        })
+        current = end
+    return antardashas
 
 
 def get_coordinates(place: str) -> tuple[float, float, str]:
@@ -205,6 +677,10 @@ def calculate_kundali(birth_date: str, birth_time: str, birth_place: str) -> dic
             d["is_current"] = True
             break
 
+    # Add antardasha (sub-periods) to each mahadasha
+    for d in dasha_sequence:
+        d["antardashas"] = _calculate_antardashas(d["lord"], d["start"], d["years"])
+
     # Bhrigu Bindu = midpoint of Rahu and Moon longitudes
     rahu_lon = planet_data["Rahu"]["longitude"]
     moon_lon_raw = planet_data["Moon"]["longitude"]
@@ -239,6 +715,11 @@ def calculate_kundali(birth_date: str, birth_time: str, birth_place: str) -> dic
         "d10": _build_divisional(planet_data, asc_sidereal, _dasamsa_sign),
         "d7": _build_divisional(planet_data, asc_sidereal, _saptamsa_sign),
         "d12": _build_divisional(planet_data, asc_sidereal, _dwadasamsa_sign),
+        "d2": _build_divisional(planet_data, asc_sidereal, _hora_sign),
+        "d3": _build_divisional(planet_data, asc_sidereal, _drekkana_sign),
+        "d60": _build_divisional(planet_data, asc_sidereal, _shashtiamsha_sign),
+        "yogas": detect_yogas(planet_data, houses, asc_sign_num),
+        "ashtakavarga": calculate_ashtakavarga(planet_data, asc_sign_num),
         "birth_info": {
             "date": birth_date,
             "time": birth_time,

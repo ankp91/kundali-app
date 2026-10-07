@@ -8,14 +8,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from astro import calculate_kundali
+from astro import calculate_kundali, get_current_transits, calculate_varshaphal
 from vision import parse_kundali_image
 from matching import calculate_match
-from panchang import calculate_panchang, geocode_place
+from panchang import calculate_panchang, geocode_place, calculate_monthly_panchang, find_muhurta
 from ai_agent import (
     interpret_full_chart, interpret_placement,
     chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
     stream_full_chart, stream_placement, stream_chat, stream_divisional_chart,
+    stream_transits, stream_remedies, stream_varshaphal,
 )
 
 app = FastAPI(title="Kundali API")
@@ -191,3 +192,103 @@ def match_interpret(match_data: dict):
         return {"interpretation": interpret_match(match_data, language)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class TransitsRequest(BaseModel):
+    chart_data: dict
+    language: str = 'en'
+
+
+@app.post("/api/transits")
+def transits(req: TransitsRequest):
+    try:
+        asc_sign_num = req.chart_data.get("ascendant", {}).get("sign_num", 0)
+        transit_data = get_current_transits(asc_sign_num)
+        return transit_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/interpret-transits")
+def interpret_transits(req: TransitsRequest):
+    try:
+        asc_sign_num = req.chart_data.get("ascendant", {}).get("sign_num", 0)
+        transit_data = get_current_transits(asc_sign_num)
+        return StreamingResponse(
+            stream_transits(transit_data, req.chart_data, req.language),
+            media_type="text/plain; charset=utf-8",
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class RemediesRequest(BaseModel):
+    chart_data: dict
+    language: str = 'en'
+
+
+@app.post("/api/remedies")
+def remedies(req: RemediesRequest):
+    return StreamingResponse(
+        stream_remedies(req.chart_data, req.language),
+        media_type="text/plain; charset=utf-8",
+    )
+
+
+class VarshaphalInput(BaseModel):
+    name: str
+    birth_date: str
+    birth_time: str
+    birth_place: str
+    year: int
+
+
+@app.post("/api/varshaphal")
+def varshaphal(data: VarshaphalInput):
+    try:
+        result = calculate_varshaphal(data.birth_date, data.birth_time, data.birth_place, data.year)
+        result["name"] = data.name
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class VarshaphalInterpretRequest(BaseModel):
+    chart_data: dict
+    year: int
+    language: str = 'en'
+
+
+@app.post("/api/interpret-varshaphal")
+def interpret_varshaphal(req: VarshaphalInterpretRequest):
+    return StreamingResponse(
+        stream_varshaphal(req.chart_data, req.year, req.language),
+        media_type="text/plain; charset=utf-8",
+    )
+
+
+@app.get("/api/panchang/monthly")
+def panchang_monthly(date: str, lat: float, lon: float, tz: str):
+    try:
+        parts = date.split("-")
+        year, month = int(parts[0]), int(parts[1])
+        return calculate_monthly_panchang(year, month, lat, lon, tz)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class MuhurtaRequest(BaseModel):
+    activity: str
+    date_from: str
+    date_to: str
+    lat: float
+    lon: float
+    tz: str
+
+
+@app.post("/api/muhurta")
+def muhurta(req: MuhurtaRequest):
+    try:
+        return find_muhurta(req.activity, req.date_from, req.date_to, req.lat, req.lon, req.tz)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

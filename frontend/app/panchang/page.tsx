@@ -31,6 +31,11 @@ interface Panchang {
 interface GeoResult { name: string; lat: number; lon: number; tz: string }
 interface LiveVedic { ghati: number; pala: number; vipala: number; isDay: boolean }
 
+interface CalDay {
+  date: string; weekday: number; day_of_week: string; tithi: string; tithi_num: number
+  nakshatra: string; nakshatra_hi: string; yoga: string; sunrise: string
+  is_today: boolean; is_auspicious: boolean
+}
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const NATURE_STYLE: Record<string, string> = {
@@ -82,7 +87,20 @@ export default function PanchangPage() {
   const [data, setData]         = useState<Panchang | null>(null)
   const [loading, setLoading]   = useState(false)
   const [error, setError]       = useState('')
-  const [activeTab, setActiveTab] = useState<'panchang'|'choghadiya'|'hora'|'vedic'>('panchang')
+  const [activeTab, setActiveTab] = useState<'panchang'|'choghadiya'|'hora'|'vedic'|'calendar'|'muhurta'>('panchang')
+
+  // Calendar state
+  const [calYear, setCalYear] = useState(new Date().getFullYear())
+  const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1)
+  const [calData, setCalData] = useState<CalDay[]>([])
+  const [calLoading, setCalLoading] = useState(false)
+
+  // Muhurta state
+  const [muhurtaActivity, setMuhurtaActivity] = useState('business')
+  const [muhurtaFrom, setMuhurtaFrom] = useState(TODAY)
+  const [muhurtaTo, setMuhurtaTo] = useState(() => { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().slice(0,10) })
+  const [muhurtaResults, setMuhurtaResults] = useState<MuhurtaSlot[]>([])
+  const [muhurtaLoading, setMuhurtaLoading] = useState(false)
   const [liveVedic, setLiveVedic] = useState<LiveVedic | null>(null)
 
   const fetchPanchang = useCallback(async (loc: GeoResult, d: string) => {
@@ -136,11 +154,37 @@ export default function PanchangPage() {
     if (location) fetchPanchang(location, d)
   }
 
+  const fetchCalendar = async (loc: GeoResult, y: number, m: number) => {
+    setCalLoading(true)
+    try {
+      const params = new URLSearchParams({ date: `${y}-${String(m).padStart(2,'0')}`, lat: String(loc.lat), lon: String(loc.lon), tz: loc.tz })
+      const res = await fetch(`/api/panchang/monthly?${params}`)
+      setCalData(await res.json())
+    } catch { setCalData([]) }
+    setCalLoading(false)
+  }
+
+  const fetchMuhurta = async () => {
+    if (!location) return
+    setMuhurtaLoading(true)
+    try {
+      const res = await fetch('/api/muhurta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activity: muhurtaActivity, date_from: muhurtaFrom, date_to: muhurtaTo, lat: location.lat, lon: location.lon, tz: location.tz }),
+      })
+      setMuhurtaResults(await res.json())
+    } catch { setMuhurtaResults([]) }
+    setMuhurtaLoading(false)
+  }
+
   const tabs = [
     { key: 'panchang',   label: 'Panchang' },
     { key: 'choghadiya', label: 'Choghadiya' },
     { key: 'hora',       label: 'Hora' },
     { key: 'vedic',      label: 'Vedic Time' },
+    { key: 'calendar',   label: '📅 Calendar' },
+    { key: 'muhurta',    label: '✨ Muhurta' },
   ] as const
 
   return (
@@ -473,6 +517,128 @@ export default function PanchangPage() {
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 text-xs text-gray-400">
                   <span className="text-saffron-400 font-medium">Note:</span> Unlike clock time, Vedic Ghati is relative to sunrise/sunset — its duration in minutes changes with the season and location. Today a Ghati is {data.vedic_time.ghati_duration_min} min at your location.
                 </div>
+              </div>
+            )}
+
+            {/* Calendar Tab */}
+            {activeTab === 'calendar' && (
+              <div className="space-y-4">
+                <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-4">
+                  <div className="flex items-center gap-3 mb-4 flex-wrap">
+                    <select value={calMonth} onChange={e => setCalMonth(Number(e.target.value))} className="bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
+                      {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) => <option key={i} value={i+1}>{m}</option>)}
+                    </select>
+                    <input type="number" value={calYear} onChange={e => setCalYear(Number(e.target.value))} className="w-24 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                    <button onClick={() => location && fetchCalendar(location, calYear, calMonth)} disabled={calLoading || !location} className="px-4 py-2 bg-saffron-700/20 border border-saffron-600/40 text-saffron-400 hover:text-gold-400 rounded-lg text-sm transition disabled:opacity-50">
+                      {calLoading ? 'Loading...' : 'View Month'}
+                    </button>
+                  </div>
+                  {calData.length > 0 && (
+                    <>
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                          <div key={d} className="text-center text-xs text-saffron-400/70 font-medium py-1">{d}</div>
+                        ))}
+                      </div>
+                      {(() => {
+                        const firstDay = calData[0]?.weekday ?? 0
+                        const cells: (CalDay | null)[] = Array(firstDay).fill(null).concat(calData)
+                        while (cells.length % 7 !== 0) cells.push(null)
+                        const weeks = []
+                        for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i+7))
+                        return weeks.map((week, wi) => (
+                          <div key={wi} className="grid grid-cols-7 gap-1 mb-1">
+                            {week.map((day, di) => (
+                              <div key={di} className={`rounded-lg p-1.5 min-h-[64px] border text-xs ${
+                                day?.is_today ? 'border-gold-400/60 bg-gold-400/10' :
+                                day?.is_auspicious ? 'border-green-500/30 bg-green-500/5' :
+                                'border-saffron-700/20 bg-deepblue-950/50'
+                              }`}>
+                                {day && (
+                                  <>
+                                    <div className="font-bold text-gray-200">{new Date(day.date).getDate()}</div>
+                                    <div className="text-gray-500 text-[10px] leading-tight truncate">{day.tithi}</div>
+                                    <div className="text-gray-600 text-[10px] leading-tight truncate">{day.nakshatra}</div>
+                                    {day.is_auspicious && <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-0.5" />}
+                                    {day.is_today && <div className="text-gold-400 text-[10px] font-bold">Today</div>}
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ))
+                      })()}
+                      <div className="mt-3 flex gap-4 text-xs text-gray-500">
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1" />Auspicious day</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-gold-400 mr-1" />Today</span>
+                      </div>
+                    </>
+                  )}
+                  {!location && <p className="text-gray-500 text-sm text-center py-4">Set a location first to view monthly panchang.</p>}
+                </div>
+              </div>
+            )}
+
+            {/* Muhurta Tab */}
+            {activeTab === 'muhurta' && (
+              <div className="space-y-4">
+                <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
+                  <h3 className="text-gold-400 font-bold text-lg mb-4">✨ Muhurta Finder</h3>
+                  <p className="text-gray-500 text-sm mb-4">Find auspicious dates for important activities based on tithi, nakshatra, vara, and choghadiya.</p>
+                  <div className="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="text-xs text-saffron-400/70 block mb-1">Activity</label>
+                      <select value={muhurtaActivity} onChange={e => setMuhurtaActivity(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
+                        <option value="marriage">Marriage / Engagement</option>
+                        <option value="business">Business Start</option>
+                        <option value="travel">Travel</option>
+                        <option value="medical">Medical / Surgery</option>
+                        <option value="purchase">Purchase / Investment</option>
+                        <option value="education">Education / Learning</option>
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs text-saffron-400/70 block mb-1">From</label>
+                        <input type="date" value={muhurtaFrom} onChange={e => setMuhurtaFrom(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-saffron-400/70 block mb-1">To</label>
+                        <input type="date" value={muhurtaTo} onChange={e => setMuhurtaTo(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                      </div>
+                    </div>
+                  </div>
+                  <button onClick={fetchMuhurta} disabled={muhurtaLoading || !location} className="w-full py-3 bg-saffron-600/20 border border-saffron-600/40 text-saffron-400 hover:text-gold-400 hover:border-gold-400 rounded-lg text-sm transition disabled:opacity-50">
+                    {muhurtaLoading ? 'Finding auspicious dates...' : '🔍 Find Muhurta'}
+                  </button>
+                  {!location && <p className="text-gray-500 text-xs mt-2 text-center">Set a location first.</p>}
+                </div>
+                {muhurtaResults.length > 0 && (
+                  <div className="space-y-3">
+                    {muhurtaResults.map((m, i) => (
+                      <div key={i} className={`bg-deepblue-900 border rounded-xl p-4 ${m.quality === 'excellent' ? 'border-gold-400/40' : 'border-green-500/30'}`}>
+                        <div className="flex items-center gap-3 mb-2">
+                          <span className="text-gray-200 font-bold">{m.date}</span>
+                          <span className="text-gray-400 text-sm">{m.day_of_week}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${m.quality === 'excellent' ? 'bg-gold-400/20 text-gold-400' : 'bg-green-500/20 text-green-400'}`}>{m.quality.toUpperCase()}</span>
+                        </div>
+                        <div className="flex gap-4 text-sm text-gray-400 mb-2">
+                          <span>⏰ {m.time_from}{m.time_to ? ` – ${m.time_to}` : ''}</span>
+                          <span className="text-saffron-400">{m.choghadiya}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mb-2">{m.tithi} · {m.nakshatra}</div>
+                        <div className="flex flex-wrap gap-1">
+                          {m.reasons.map((r, ri) => (
+                            <span key={ri} className="text-xs bg-deepblue-950/70 border border-saffron-700/20 text-saffron-400/80 px-2 py-0.5 rounded-full">{r}</span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {muhurtaResults.length === 0 && !muhurtaLoading && (
+                  <p className="text-gray-500 text-sm text-center">No results yet. Set your activity and date range, then click Find Muhurta.</p>
+                )}
               </div>
             )}
           </>

@@ -755,6 +755,126 @@ Give a warm, personalised 4-5 paragraph reading. Reference specific planetary pl
     return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
 
 
+def stream_varshaphal(chart_data: dict, year: int, language: str = 'en'):
+    asc = chart_data.get("ascendant", {})
+    planets = chart_data.get("planets", {})
+    return_date = chart_data.get("return_date", "")
+    return_time = chart_data.get("return_time", "")
+    birth_info = chart_data.get("birth_info", {})
+
+    planet_summary = "\n".join([
+        f"- {p}: {d['sign']} (House {d['house']}, {d['degree']}°){' [R]' if d.get('is_retrograde') else ''}"
+        for p, d in planets.items()
+    ])
+
+    msg = f"""Interpret this Varshaphal (Solar Return) chart for {year} using Vedic astrology principles.
+
+Solar Return occurred: {return_date} at {return_time}
+Birth Place: {birth_info.get('place', 'Unknown')}
+
+Varshaphal Ascendant (Lagna for this year): {asc.get('sign')} at {asc.get('degree')}°
+
+Varshaphal Planetary Positions:
+{planet_summary}
+
+Provide an annual forecast covering:
+1. **Year's Theme** — What does the Varshaphal Lagna sign indicate as the overarching theme for this year?
+2. **Career & Status** — Planets in/aspecting 10th house, and what the year holds professionally
+3. **Relationships & Partnerships** — 7th house analysis for the year
+4. **Finances & Resources** — 2nd and 11th house analysis
+5. **Health & Vitality** — Lagna, 6th house, and overall chart strength for this year
+6. **Spiritual & Inner Growth** — 9th, 12th house themes
+7. **Key Months to Watch** — Based on faster-moving planets (Mercury, Venus, Mars), identify 2-3 months with important shifts
+8. **Overall Verdict** — Is this a year of expansion, consolidation, or transformation? What is the single most important focus?
+
+Be warm, specific, and reference actual placements. About 500 words.""" + _lang_instruction(language)
+
+    return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2500)
+
+
+def stream_transits(transit_data: dict, chart_data: dict, language: str = 'en'):
+    today = transit_data.get("date", datetime.now().strftime("%Y-%m-%d"))
+    transits = transit_data.get("planets", {})
+    asc = chart_data.get("ascendant", {})
+    natal_planets = chart_data.get("planets", {})
+    dashas = chart_data.get("dashas", [])
+    current_dasha = next((d for d in dashas if d.get("is_current")), None)
+    dasha_line = f"\nCurrent Dasha: {current_dasha['lord']} ({current_dasha['start']} – {current_dasha['end']})" if current_dasha else ""
+    bb = chart_data.get("bhrigu_bindu", {})
+    bb_line = f"\nBhrigu Bindu: {bb.get('sign')} House {bb.get('house')} at {bb.get('degree')}°" if bb else ""
+
+    transit_summary = "\n".join([
+        f"- {p}: {d['sign']} (transiting natal House {d['house']}){' [R]' if d.get('is_retrograde') else ''}"
+        for p, d in transits.items()
+    ])
+    natal_summary = "\n".join([
+        f"- {p}: {d['sign']} House {d['house']}"
+        for p, d in natal_planets.items()
+    ])
+
+    msg = f"""Analyse the current planetary transits for this native using Bhrigu Nadi and Parashari transit principles.
+
+Today: {today}
+Natal Ascendant: {asc.get('sign')} at {asc.get('degree')}°{dasha_line}{bb_line}
+
+Natal Planetary Positions:
+{natal_summary}
+
+Today's Transits (planet: sign → natal house being transited):
+{transit_summary}
+
+Cover:
+1. Most significant transit happening right now and why (Jupiter's position is especially important — Bhrigu Nadi)
+2. Saturn's current transit impact (karmic timing)
+3. Rahu/Ketu axis and its effect on the natal chart
+4. Any planets transiting over natal planets — what events are being triggered?
+5. Is Jupiter approaching the Bhrigu Bindu? When will it arrive?
+6. Overall theme for the next 3-6 months based on these transits
+
+Be specific, reference the actual houses and natal placements. About 400 words.""" + _lang_instruction(language)
+
+    return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2000)
+
+
+def stream_remedies(chart_data: dict, language: str = 'en'):
+    asc = chart_data.get("ascendant", {})
+    planets = chart_data.get("planets", {})
+    dashas = chart_data.get("dashas", [])
+    current_dasha = next((d for d in dashas if d.get("is_current")), None)
+    dasha_line = f"Current Dasha: {current_dasha['lord']} ({current_dasha['start']} – {current_dasha['end']})" if current_dasha else ""
+
+    planet_summary = "\n".join([
+        f"- {p}: {d['sign']} House {d['house']}, {d['degree']}°{' [R]' if d.get('is_retrograde') else ''}"
+        for p, d in planets.items()
+    ])
+
+    msg = f"""Provide personalised Vedic astrology remedies (Upayas) for this chart using Bhrigu Samhita and Parashari principles.
+
+Ascendant: {asc.get('sign')} at {asc.get('degree')}°
+{dasha_line}
+
+Planetary Positions:
+{planet_summary}
+
+Identify the 3-4 planets most in need of remedy in this chart (debilitated, retrograde, in dusthana, or afflicted by malefics) and provide:
+
+For each planet needing remedy:
+1. **Planet & Issue**: Why this planet needs attention (debilitation, placement, retrograde, affliction)
+2. **Karmic Root**: Bhrigu's view — what past karma is being worked out?
+3. **Mantra**: The specific Beej mantra to chant, with repetition count and timing
+4. **Daan (Donation)**: What to donate, to whom, on which day
+5. **Behavioral Remedy**: One conscious behavioural change that strengthens this planet
+6. **Gemstone** (only if strongly indicated): Which stone, which finger, which metal — with caution if contraindicated
+
+Also provide:
+- **Dasha Remedy**: Specific upaya for the current dasha lord
+- **General Daily Practice**: 2-3 simple daily practices that benefit the entire chart
+
+Be warm and practical. Focus on doable remedies, not elaborate or expensive ones. About 500 words.""" + _lang_instruction(language)
+
+    return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2500)
+
+
 def interpret_match(match_data: dict, language: str = 'en') -> str:
     p1 = match_data.get("person1", {})
     p2 = match_data.get("person2", {})

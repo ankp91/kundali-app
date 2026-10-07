@@ -351,6 +351,163 @@ def _vedic_time(jd_sr: float, jd_ss: float, tz: str) -> dict:
     }
 
 
+# ── Monthly Panchang ──────────────────────────────────────────────────────────
+
+# Auspicious tithis (1-indexed) per activity
+_GOOD_TITHIS = {
+    "marriage":  {2,3,5,7,10,11,13},
+    "business":  {1,2,3,5,7,10,11,13},
+    "travel":    {2,3,5,7,10,11,12},
+    "medical":   {2,3,5,7,10,11},
+    "purchase":  {2,3,5,7,10,11,13},
+    "education": {2,3,5,7,10,11,12},
+}
+
+# Auspicious vara (0=Sun…6=Sat) per activity
+_GOOD_VARA = {
+    "marriage":  {1,3,4,5},   # Mon,Wed,Thu,Fri
+    "business":  {1,3,4,5},
+    "travel":    {1,3,4},
+    "medical":   {1,3,4},
+    "purchase":  {1,3,4,5},
+    "education": {3,4,5},
+}
+
+# Auspicious nakshatras (0-indexed) per activity
+_GOOD_NAK = {
+    "marriage":  {3,4,9,11,12,14,16,18,20,25,26},
+    "business":  {3,4,6,7,12,13,14,16,26,0},
+    "travel":    {0,4,6,7,12,13,14,16,17,21,22,26},
+    "medical":   {0,3,4,6,7,12,14,16,17,26},
+    "purchase":  {3,6,7,11,12,13,14,15,16,20,21,25,26},
+    "education": {4,6,7,12,13,14,16,17,21,26},
+}
+
+# Bad yogas (0-indexed)
+_BAD_YOGA = {0, 5, 8, 9, 13, 16, 18, 26}  # Vishkambha,Atiganda,Shula,Ganda,Vajra,Vyatipata,Parigha,Vaidhriti
+
+# Good choghadiya for any activity
+_GOOD_CHOG = {"Amrit", "Shubh", "Labh"}
+
+
+def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | None:
+    """Lightweight daily panchang — tithi/nakshatra/yoga/sunrise only."""
+    try:
+        jd_noon = _local_to_jd(date_str, 12.0, tz_str)
+        jd_sr   = _rise_set(jd_noon - 0.5, swe.SUN, swe.CALC_RISE, lat, lon)
+        jd_ss   = _rise_set(jd_noon,       swe.SUN, swe.CALC_SET,  lat, lon)
+        weekday = _weekday(jd_sr, tz_str)
+        sun_sid  = _sidereal(jd_sr, swe.SUN)
+        moon_sid = _sidereal(jd_sr, swe.MOON)
+        diff     = (moon_sid - sun_sid) % 360
+        tithi_i  = int(diff / 12)
+        nak_i    = int(moon_sid / (360 / 27))
+        yoga_i   = int(((sun_sid + moon_sid) % 360) / (360 / 27))
+        paksha   = 'Shukla' if tithi_i < 15 else 'Krishna'
+        return {
+            "date": date_str,
+            "weekday": weekday,
+            "day_of_week": VARA[weekday],
+            "day_of_week_hi": VARA_HI[weekday],
+            "tithi": TITHI[tithi_i],
+            "tithi_num": tithi_i + 1,
+            "paksha": paksha,
+            "nakshatra": NAKSHATRA[nak_i],
+            "nakshatra_hi": NAKSHATRA_HI[nak_i],
+            "nakshatra_idx": nak_i,
+            "yoga": YOGA[yoga_i],
+            "yoga_idx": yoga_i,
+            "sunrise": _fmt(jd_sr, tz_str),
+            "jd_sr": jd_sr,
+            "jd_ss": jd_ss,
+        }
+    except Exception:
+        return None
+
+
+def calculate_monthly_panchang(year: int, month: int, lat: float, lon: float, tz_str: str) -> list:
+    import calendar
+    from datetime import date as date_cls
+    today_str = date_cls.today().isoformat()
+    days_in_month = calendar.monthrange(year, month)[1]
+    result = []
+    for day in range(1, days_in_month + 1):
+        d_str = f"{year:04d}-{month:02d}-{day:02d}"
+        info = _quick_day(d_str, lat, lon, tz_str)
+        if info is None:
+            continue
+        # General auspiciousness: good tithi + good vara + not bad yoga
+        tithi_ok = info["tithi_num"] in {2,3,5,7,10,11,13}
+        vara_ok  = info["weekday"] in {1,3,4,5}
+        yoga_ok  = info["yoga_idx"] not in _BAD_YOGA
+        info["is_today"] = d_str == today_str
+        info["is_auspicious"] = tithi_ok and vara_ok and yoga_ok
+        result.append(info)
+    return result
+
+
+# ── Muhurta Finder ────────────────────────────────────────────────────────────
+
+def find_muhurta(activity: str, date_from: str, date_to: str, lat: float, lon: float, tz_str: str) -> list:
+    from datetime import date as date_cls, timedelta as td
+    activity = activity.lower()
+    good_tithis = _GOOD_TITHIS.get(activity, _GOOD_TITHIS["business"])
+    good_vara   = _GOOD_VARA.get(activity, _GOOD_VARA["business"])
+    good_nak    = _GOOD_NAK.get(activity, _GOOD_NAK["business"])
+
+    d_from = date_cls.fromisoformat(date_from)
+    d_to   = date_cls.fromisoformat(date_to)
+    results = []
+    d = d_from
+    while d <= d_to and len(results) < 10:
+        d_str = d.isoformat()
+        info = _quick_day(d_str, lat, lon, tz_str)
+        if info is None:
+            d += td(days=1)
+            continue
+        score = 0
+        reasons = []
+
+        if info["tithi_num"] in good_tithis:
+            score += 2
+            reasons.append(f"{info['tithi']} tithi (auspicious)")
+        if info["weekday"] in good_vara:
+            score += 2
+            reasons.append(f"{info['day_of_week']} (auspicious day)")
+        if info["nakshatra_idx"] in good_nak:
+            score += 2
+            reasons.append(f"{info['nakshatra']} nakshatra (auspicious)")
+        if info["yoga_idx"] not in _BAD_YOGA:
+            score += 1
+            reasons.append(f"{info['yoga']} yoga (favourable)")
+
+        if score >= 5:
+            # Find best choghadiya window
+            try:
+                kalams = _kalam_times(info["jd_sr"], info["jd_ss"], info["weekday"], tz_str)
+                day_chog = _choghadiya(info["jd_sr"], info["jd_ss"], info["weekday"], day=True, tz=tz_str, kalams=kalams)
+                best_slot = next((c for c in day_chog if c["name"] in _GOOD_CHOG), None)
+                quality = "excellent" if score >= 7 else "good"
+                results.append({
+                    "date": d_str,
+                    "day_of_week": info["day_of_week"],
+                    "time_from": best_slot["start"] if best_slot else info["sunrise"],
+                    "time_to":   best_slot["end"]   if best_slot else "",
+                    "choghadiya": best_slot["name"]  if best_slot else "Amrit",
+                    "tithi": info["tithi"],
+                    "nakshatra": info["nakshatra"],
+                    "quality": quality,
+                    "score": score,
+                    "reasons": reasons,
+                })
+            except Exception:
+                pass
+        d += td(days=1)
+
+    results.sort(key=lambda x: x["score"], reverse=True)
+    return results[:7]
+
+
 def geocode_place(query: str) -> dict:
     geolocator = Nominatim(user_agent='kundali_panchang')
     location   = geolocator.geocode(query)
