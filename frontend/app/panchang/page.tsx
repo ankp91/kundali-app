@@ -36,6 +36,11 @@ interface CalDay {
   nakshatra: string; nakshatra_hi: string; yoga: string; sunrise: string
   is_today: boolean; is_auspicious: boolean
 }
+interface MuhurtaSlot {
+  date: string; day_of_week: string; time_from: string; time_to: string
+  choghadiya: string; tithi: string; nakshatra: string; quality: string
+  score: number; reasons: string[]
+}
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const NATURE_STYLE: Record<string, string> = {
