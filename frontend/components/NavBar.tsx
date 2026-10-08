@@ -5,7 +5,7 @@ export default function NavBar() {
   const { t, lang, toggle } = useLanguage()
   return (
     <nav className="border-b border-saffron-700/30 bg-deepblue-900/80 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-6">
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center flex-wrap gap-x-4 sm:gap-x-6 gap-y-2">
         <a href="/" className="text-gold-400 font-bold text-xl tracking-wide">🔱 Kundali</a>
         <a href="/learn" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.learn}</a>
         <a href="/match" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.match}</a>

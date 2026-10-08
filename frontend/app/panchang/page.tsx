@@ -242,12 +242,12 @@ export default function PanchangPage() {
         {data && !loading && (
           <>
             {/* Tab bar */}
-            <div className="flex gap-2 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-1.5">
               {tabs.map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                     activeTab === tab.key
                       ? 'bg-saffron-600/30 text-gold-400 border border-saffron-600/50'
                       : 'text-saffron-400/70 hover:text-gold-400 border border-transparent'
