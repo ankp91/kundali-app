@@ -204,7 +204,7 @@ export default function PanchangPage() {
 
         {/* Controls */}
         <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-4 space-y-3">
-          <div className="flex flex-col sm:flex-row gap-3 overflow-hidden">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 min-w-0">
               <label className="text-xs text-saffron-400/70 block mb-1">Date</label>
               <input
