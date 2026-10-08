@@ -162,12 +162,12 @@ export default function ChartPage() {
         </div>
 
         <div className="space-y-4">
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex flex-wrap gap-1.5">
             {tabs.map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition whitespace-nowrap flex-shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition whitespace-nowrap ${
                   activeTab === tab.key
                     ? 'bg-saffron-600 text-white'
                     : 'bg-deepblue-900 border border-saffron-700/30 text-saffron-400 hover:border-gold-400'
