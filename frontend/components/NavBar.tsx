@@ -12,6 +12,7 @@ export default function NavBar() {
         <a href="/panchang" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.panchang}</a>
         <a href="/saved" className="text-saffron-400 hover:text-gold-400 transition text-sm">Saved</a>
         <a href="/varshaphal" className="text-saffron-400 hover:text-gold-400 transition text-sm">Varshaphal</a>
+        <a href="/prasna" className="text-saffron-400 hover:text-gold-400 transition text-sm">Prasna</a>
         <div className="ml-auto">
           <button
             onClick={toggle}

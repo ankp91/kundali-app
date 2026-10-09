@@ -706,6 +706,42 @@ _DIV_INFO: dict = {
             "6. What karmic gifts or ancestral debts is this person born with?"
         ),
     },
+    'd2': {
+        'name': 'Hora (D2)',
+        'domain': 'wealth, income, financial patterns, money-making ability',
+        'instructions': (
+            "1. D2 ascendant — is it Leo (Sun-ruled) or Cancer (Moon-ruled)? This determines wealth through solar (active enterprise) or lunar (passive/inherited) means\n"
+            "2. Planets in Leo hora — wealth through authority, leadership, government\n"
+            "3. Planets in Cancer hora — wealth through property, family, nurturing fields\n"
+            "4. Sun's position in D2 — primary wealth indicator for solar significations\n"
+            "5. Moon's position in D2 — primary wealth indicator for emotional/inherited wealth\n"
+            "6. Overall D2 story: what is this person's primary path to financial prosperity?"
+        ),
+    },
+    'd3': {
+        'name': 'Drekkana (D3)',
+        'domain': 'siblings, courage, self-initiated efforts, short journeys, communication',
+        'instructions': (
+            "1. D3 ascendant — the nature of this person's courage and self-effort\n"
+            "2. Mars in D3 — courage, physical energy, and relationship with siblings\n"
+            "3. 3rd house of D3 — direct indicator of siblings and their nature\n"
+            "4. Mercury in D3 — communication style and short-journey patterns\n"
+            "5. Any malefics in 3rd house of D3 — challenges with siblings or courage\n"
+            "6. Overall D3 story: how does this person express courage and what is their sibling karma?"
+        ),
+    },
+    'd60': {
+        'name': 'Shashtiamsha (D60)',
+        'domain': 'past-life karma, soul essence, deepest karmic imprints, spiritual DNA',
+        'instructions': (
+            "1. D60 ascendant — the soul's karmic identity and deepest spiritual orientation\n"
+            "2. Sun in D60 — past-life solar karma: authority, father, soul purpose carried forward\n"
+            "3. Moon in D60 — past-life emotional karma: mother, mind, emotional patterns from prior lives\n"
+            "4. Saturn in D60 — karmic debts and duties being resolved in this lifetime\n"
+            "5. Rahu/Ketu in D60 — the soul's evolutionary direction and past-life mastery\n"
+            "6. Overall D60 story: what karmic seeds from past lives is this soul sprouting in this incarnation?"
+        ),
+    },
 }
 
 
@@ -873,6 +909,70 @@ Also provide:
 Be warm and practical. Focus on doable remedies, not elaborate or expensive ones. About 500 words.""" + _lang_instruction(language)
 
     return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 2500)
+
+
+def stream_prasna(question: str, chart_data: dict, language: str = 'en'):
+    asc = chart_data.get("ascendant", {})
+    planets = chart_data.get("planets", {})
+    today_str = datetime.now().strftime("%B %d, %Y %H:%M")
+
+    planet_summary = "\n".join([
+        f"- {p}: {d['sign']} (House {d['house']}, {d['degree']}°){' [R]' if d.get('is_retrograde') else ''}"
+        for p, d in planets.items()
+    ])
+
+    msg = f"""Interpret this Prasna (Horary) chart for the following question.
+
+Question asked: "{question}"
+Chart cast at: {today_str}
+
+Prasna Ascendant (Lagna): {asc.get('sign')} at {asc.get('degree')}°
+
+Prasna Planetary Positions:
+{planet_summary}
+
+Apply Prasna Jyotish principles:
+1. **Ascendant Analysis** — The Lagna lord represents the querent. Where is it placed and what does it indicate about the question?
+2. **Significator House** — Identify the house that rules the subject of the question (e.g. 7th for relationships, 10th for career, 2nd/11th for money, 5th for children). What planets occupy or aspect it?
+3. **Moon's Role** — The Moon is the co-significator of the querent and carries the message. Where is it placed and what is it applying to?
+4. **Answer** — Based on the planetary positions, give a clear YES/NO or directional answer with reasoning. Is the situation favourable or unfavourable?
+5. **Timing** — If the answer is positive, when might the event occur? Use the Moon's degrees to next aspect as indicator.
+6. **Advice** — What should the querent do or avoid based on this chart?
+
+Be clear and direct. Give an actual answer, not just analysis. About 300 words.""" + _lang_instruction(language)
+
+    return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 1500)
+
+
+def stream_shadbala_insight(shadbala: dict, chart_data: dict, language: str = 'en'):
+    asc = chart_data.get("ascendant", {})
+
+    planet_lines = []
+    for planet, data in shadbala.items():
+        planet_lines.append(
+            f"- {planet}: {data['total']} virupas ({data['strength_label']}) — "
+            f"Uccha:{data['components']['uccha_bala']['value']}, "
+            f"Dig:{data['components']['dig_bala']['value']}, "
+            f"Chesta:{data['components']['chesta_bala']['value']}"
+        )
+    summary = "\n".join(planet_lines)
+
+    msg = f"""Interpret this Shadbala (planetary strength) analysis for the native. Translate the numbers into meaningful life insights.
+
+Ascendant: {asc.get('sign')}
+
+Shadbala Scores (virupas):
+{summary}
+
+Provide:
+1. **Strongest Planet** — which planet is most powerful and how does this manifest in this person's life?
+2. **Weakest Planet(s)** — which planets need support and what life areas are affected?
+3. **Key Insight** — one surprising or important pattern in the strength distribution
+4. **Practical Guidance** — based on the weakest planets, what remedies or lifestyle adjustments would help?
+
+Be specific, warm, and use plain language alongside Jyotish terms. About 250 words.""" + _lang_instruction(language)
+
+    return _stream_openai(SYSTEM_INTERPRET, [{"role": "user", "content": msg}], 1200)
 
 
 def interpret_match(match_data: dict, language: str = 'en') -> str:

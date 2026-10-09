@@ -382,6 +382,167 @@ def calculate_ashtakavarga(planet_data: dict, asc_sign_num: int) -> dict:
     return result
 
 
+EXALT_DEG = {"Sun": 10.0, "Moon": 33.0, "Mars": 298.0, "Mercury": 165.0,
+             "Jupiter": 95.0, "Venus": 357.0, "Saturn": 200.0}
+DEBI_DEG  = {p: (d + 180) % 360 for p, d in EXALT_DEG.items()}
+
+DIG_BALA_HOUSE = {"Sun": 10, "Mars": 10, "Moon": 4, "Venus": 4,
+                  "Mercury": 1, "Jupiter": 1, "Saturn": 7}
+
+NAISARGIKA_BALA = {"Sun": 60.0, "Moon": 51.43, "Venus": 51.43,
+                   "Jupiter": 34.29, "Mercury": 25.71, "Mars": 17.14, "Saturn": 8.57}
+
+_SIGN_REL = {
+    "Sun":     {4:'own',0:'exalt',3:'friend',8:'friend',1:'neutral',6:'neutral',2:'enemy',5:'enemy',7:'neutral',9:'enemy',10:'neutral',11:'friend'},
+    "Moon":    {3:'own',1:'exalt',2:'friend',0:'neutral',4:'friend',5:'neutral',6:'friend',8:'neutral',9:'neutral',10:'neutral',11:'friend',7:'enemy'},
+    "Mars":    {0:'own',7:'own',9:'exalt',4:'friend',8:'friend',10:'friend',3:'neutral',11:'neutral',2:'enemy',5:'enemy',1:'enemy',6:'enemy'},
+    "Mercury": {2:'own',5:'own',1:'friend',6:'friend',9:'neutral',10:'neutral',0:'enemy',3:'enemy',4:'neutral',7:'neutral',8:'neutral',11:'enemy'},
+    "Jupiter": {8:'own',11:'own',3:'exalt',0:'friend',4:'friend',7:'neutral',9:'neutral',1:'enemy',2:'enemy',5:'enemy',6:'enemy',10:'neutral'},
+    "Venus":   {1:'own',6:'own',11:'exalt',2:'friend',9:'friend',10:'friend',8:'neutral',0:'enemy',3:'enemy',4:'neutral',5:'neutral',7:'neutral'},
+    "Saturn":  {9:'own',10:'own',6:'exalt',2:'friend',11:'friend',1:'neutral',5:'neutral',0:'enemy',3:'enemy',4:'enemy',7:'neutral',8:'neutral'},
+}
+
+
+def calculate_shadbala(planet_data: dict, asc_sign_num: int) -> dict:
+    result = {}
+    planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn"]
+
+    for planet in planets:
+        if planet not in planet_data:
+            continue
+        pd = planet_data[planet]
+        lon = pd["longitude"]
+        sign = pd["sign_num"]
+        house = pd["house"]
+        is_retro = pd.get("is_retrograde", False)
+
+        exalt = EXALT_DEG[planet]
+        dist_exalt = abs((lon - exalt + 180) % 360 - 180)
+        uccha = round((180 - dist_exalt) / 3, 2)
+
+        rel = _SIGN_REL.get(planet, {}).get(sign, 'neutral')
+        if rel in ('own', 'exalt'):
+            sthana = 45.0
+        elif rel == 'mool':
+            sthana = 37.5
+        elif rel == 'friend':
+            sthana = 22.5
+        elif rel == 'neutral':
+            sthana = 15.0
+        else:
+            sthana = 7.5
+
+        best = DIG_BALA_HOUSE.get(planet, 1)
+        h_diff = abs(house - best)
+        if h_diff > 6:
+            h_diff = 12 - h_diff
+        dig = round(60 * (1 - h_diff / 6), 2)
+
+        chesta = 60.0 if is_retro else 30.0
+
+        naisargika = NAISARGIKA_BALA[planet]
+        total = round(uccha + sthana + dig + chesta + naisargika, 2)
+
+        if total >= 250:
+            strength, label = "very_strong", "Very Strong"
+        elif total >= 180:
+            strength, label = "strong", "Strong"
+        elif total >= 120:
+            strength, label = "moderate", "Moderate"
+        elif total >= 60:
+            strength, label = "weak", "Weak"
+        else:
+            strength, label = "very_weak", "Very Weak"
+
+        result[planet] = {
+            "total": total,
+            "strength": strength,
+            "strength_label": label,
+            "components": {
+                "uccha_bala": {"value": uccha, "max": 60, "label": "Exaltation Strength",
+                    "desc": "How close the planet is to its exaltation point. High = planet's energy is amplified."},
+                "sthana_bala": {"value": sthana, "max": 45, "label": "Sign Placement",
+                    "desc": "Whether in own sign, exaltation, friendly, neutral, or enemy sign."},
+                "dig_bala": {"value": dig, "max": 60, "label": "Directional Strength",
+                    "desc": "Each planet thrives in a specific house. Full strength when there."},
+                "chesta_bala": {"value": chesta, "max": 60, "label": "Motional Strength",
+                    "desc": "Retrograde planets have heightened intensity and power."},
+                "naisargika_bala": {"value": naisargika, "max": 60, "label": "Natural Strength",
+                    "desc": "Inherent natural strength — Sun and Saturn are naturally strongest."},
+            }
+        }
+    return result
+
+
+def get_transit_calendar(natal_chart: dict, year: int, month: int) -> list:
+    import calendar as cal_mod
+    natal_planets = natal_chart.get("planets", {})
+    natal_asc_sign = natal_chart.get("ascendant", {}).get("sign_num", 0)
+    days_in_month = cal_mod.monthrange(year, month)[1]
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+    flags = swe.FLG_SIDEREAL | swe.FLG_SPEED
+
+    events = []
+    prev_signs: dict = {}
+
+    for day in range(1, days_in_month + 2):
+        d = day if day <= days_in_month else days_in_month
+        jd = swe.julday(year, month, d, 12.0)
+        day_signs = {}
+        day_lons = {}
+
+        for pid, pname in PLANETS.items():
+            pos, _ = swe.calc_ut(jd, pid, flags)
+            lon_v = pos[0] % 360
+            day_signs[pname] = int(lon_v / 30)
+            day_lons[pname] = round(lon_v, 2)
+        rahu_lon_v = day_lons.get("Rahu", 0)
+        ketu_lon_v = (rahu_lon_v + 180) % 360
+        day_signs["Ketu"] = int(ketu_lon_v / 30)
+        day_lons["Ketu"] = round(ketu_lon_v, 2)
+
+        if day > 1 and day <= days_in_month:
+            date_str = f"{year:04d}-{month:02d}-{day:02d}"
+            for pname, sign in day_signs.items():
+                if prev_signs.get(pname) != sign and pname in prev_signs:
+                    events.append({
+                        "date": date_str,
+                        "type": "ingress",
+                        "planet": pname,
+                        "from_sign": SIGNS[prev_signs[pname]],
+                        "to_sign": SIGNS[sign],
+                        "house": ((sign - natal_asc_sign) % 12) + 1,
+                        "desc": f"{pname} moves from {SIGNS[prev_signs[pname]]} to {SIGNS[sign]} (natal House {((sign - natal_asc_sign) % 12) + 1})",
+                    })
+            for t_planet, t_lon in day_lons.items():
+                for n_planet, n_data in natal_planets.items():
+                    n_lon = n_data.get("longitude", 0)
+                    diff = abs((t_lon - n_lon + 180) % 360 - 180)
+                    if diff <= 3.0 and t_planet != n_planet:
+                        already = any(
+                            e["type"] == "conjunction" and
+                            e["planet"] == t_planet and
+                            e["natal_planet"] == n_planet and
+                            abs((int(e["date"][-2:]) - day)) <= 3
+                            for e in events
+                        )
+                        if not already:
+                            events.append({
+                                "date": date_str,
+                                "type": "conjunction",
+                                "planet": t_planet,
+                                "natal_planet": n_planet,
+                                "orb": round(diff, 1),
+                                "house": n_data.get("house", 0),
+                                "desc": f"{t_planet} conjuncts natal {n_planet} in {n_data.get('sign','')} (House {n_data.get('house','')})",
+                            })
+        prev_signs = day_signs.copy()
+
+    events.sort(key=lambda e: e["date"])
+    return events
+
+
 def calculate_varshaphal(birth_date: str, birth_time: str, birth_place: str, year: int) -> dict:
     lat, lon, tz_str = get_coordinates(birth_place)
     tz = pytz.timezone(tz_str)
@@ -720,6 +881,7 @@ def calculate_kundali(birth_date: str, birth_time: str, birth_place: str) -> dic
         "d60": _build_divisional(planet_data, asc_sidereal, _shashtiamsha_sign),
         "yogas": detect_yogas(planet_data, houses, asc_sign_num),
         "ashtakavarga": calculate_ashtakavarga(planet_data, asc_sign_num),
+        "shadbala": calculate_shadbala(planet_data, asc_sign_num),
         "birth_info": {
             "date": birth_date,
             "time": birth_time,

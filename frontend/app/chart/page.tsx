@@ -9,6 +9,8 @@ import DivisionalCharts from '@/components/DivisionalCharts'
 import TransitsPanel from '@/components/TransitsPanel'
 import AshtakavargaPanel from '@/components/AshtakavargaPanel'
 import RemediesPanel from '@/components/RemediesPanel'
+import ShadbalaPanel from '@/components/ShadbalaPanel'
+import TransitCalendarPanel from '@/components/TransitCalendarPanel'
 import { useLanguage } from '@/components/LanguageProvider'
 import { downloadKundaliPDF } from '@/lib/downloadPDF'
 
@@ -29,9 +31,11 @@ export default function ChartPage() {
   const [chart, setChart] = useState<Record<string, unknown> | null>(null)
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null)
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals' | 'yogas' | 'transits' | 'ashtakavarga' | 'remedies'>('interpret')
+  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals' | 'yogas' | 'transits' | 'ashtakavarga' | 'remedies' | 'shadbala' | 'transit-calendar'>('interpret')
   const [pdfLoading, setPdfLoading] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
+  const [copyLinkMsg, setCopyLinkMsg] = useState<string | null>(null)
+  const [whatsappMsg, setWhatsappMsg] = useState<string | null>(null)
   const [selectedDasha, setSelectedDasha] = useState<number | null>(null)
   const { t } = useLanguage()
 
@@ -92,6 +96,50 @@ export default function ChartPage() {
     }
   }
 
+  const handleCopyLink = async () => {
+    if (!chart) return
+    const bi = chart.birth_info as { date: string; time: string; place: string } | undefined
+    const name = (chart.name as string) || ''
+    const url = `${window.location.origin}/?n=${encodeURIComponent(name)}&bd=${bi?.date || ''}&bt=${encodeURIComponent(bi?.time || '')}&bp=${encodeURIComponent(bi?.place || '')}`
+    await navigator.clipboard.writeText(url)
+    setCopyLinkMsg('✓ Copied!')
+    setTimeout(() => setCopyLinkMsg(null), 2000)
+  }
+
+  const handleWhatsapp = async () => {
+    if (!chart) return
+    const bi = chart.birth_info as { date: string; time: string; place: string } | undefined
+    const name = (chart.name as string) || ''
+    const asc = chart.ascendant as { sign: string } | undefined
+    const pl = chart.planets as Record<string, { sign: string; nakshatra: string }> | undefined
+    const ds = chart.dashas as Array<{ lord: string; is_current: boolean; antardashas?: Array<{ lord: string; is_current: boolean }> }> | undefined
+    const yogas = chart.yogas as Array<{ name: string }> | undefined
+
+    const currentDasha = ds?.find(d => d.is_current)
+    const currentAntardasha = currentDasha?.antardashas?.find(a => a.is_current)
+
+    const url = `${window.location.origin}/?n=${encodeURIComponent(name)}&bd=${bi?.date || ''}&bt=${encodeURIComponent(bi?.time || '')}&bp=${encodeURIComponent(bi?.place || '')}`
+
+    const summary = [
+      `🔱 *${name}'s Kundali*`,
+      '',
+      `⬆️ Ascendant: ${asc?.sign || 'N/A'}`,
+      `🌙 Moon: ${pl?.Moon?.sign || 'N/A'} (${pl?.Moon?.nakshatra || 'N/A'})`,
+      `☀️ Sun: ${pl?.Sun?.sign || 'N/A'}`,
+      '',
+      `📅 Current Dasha: ${currentDasha?.lord || 'N/A'} Dasha`,
+      `   ↳ Antardasha: ${currentAntardasha?.lord || 'N/A'}`,
+      '',
+      `✨ Top Yoga: ${yogas?.[0]?.name || 'None detected'}`,
+      '',
+      `🌐 Full Chart: ${url}`,
+    ].join('\n')
+
+    await navigator.clipboard.writeText(summary)
+    setWhatsappMsg('✓ Copied!')
+    setTimeout(() => setWhatsappMsg(null), 2000)
+  }
+
   const tabs = [
     { key: 'interpret', label: t.chart.interpret },
     { key: 'chat', label: t.chart.chat },
@@ -101,6 +149,8 @@ export default function ChartPage() {
     { key: 'transits', label: 'Transits' },
     { key: 'ashtakavarga', label: 'Ashtakavarga' },
     { key: 'remedies', label: 'Remedies' },
+    { key: 'shadbala', label: 'Shadbala' },
+    { key: 'transit-calendar', label: 'Transit Cal' },
   ] as const
 
   return (
@@ -127,6 +177,18 @@ export default function ChartPage() {
             className="flex items-center gap-2 bg-deepblue-900 border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 text-sm font-medium px-4 py-2 rounded-lg transition"
           >
             📷 Share
+          </button>
+          <button
+            onClick={handleCopyLink}
+            className="flex items-center gap-2 bg-deepblue-900 border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 text-sm font-medium px-4 py-2 rounded-lg transition"
+          >
+            {copyLinkMsg || '🔗 Copy Link'}
+          </button>
+          <button
+            onClick={handleWhatsapp}
+            className="flex items-center gap-2 bg-deepblue-900 border border-saffron-700/40 hover:border-gold-400 text-saffron-400 hover:text-gold-400 text-sm font-medium px-4 py-2 rounded-lg transition"
+          >
+            {whatsappMsg || '💬 WhatsApp'}
           </button>
           <button
             onClick={handleDownloadPDF}
@@ -295,6 +357,14 @@ export default function ChartPage() {
 
           {activeTab === 'remedies' && (
             <RemediesPanel chartData={chart} />
+          )}
+
+          {activeTab === 'shadbala' && (
+            <ShadbalaPanel chartData={chart} />
+          )}
+
+          {activeTab === 'transit-calendar' && (
+            <TransitCalendarPanel chartData={chart} />
           )}
         </div>
       </div>

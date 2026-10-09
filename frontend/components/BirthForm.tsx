@@ -4,10 +4,18 @@ import axios from 'axios'
 import { useLanguage } from './LanguageProvider'
 
 
-interface Props { onChart: (data: object) => void }
+interface Props {
+  onChart: (data: object) => void
+  initialValues?: { name?: string; birth_date?: string; birth_time?: string; birth_place?: string }
+}
 
-export default function BirthForm({ onChart }: Props) {
-  const [form, setForm] = useState({ name: '', birth_date: '', birth_time: '', birth_place: '' })
+export default function BirthForm({ onChart, initialValues }: Props) {
+  const [form, setForm] = useState({
+    name: initialValues?.name || '',
+    birth_date: initialValues?.birth_date || '',
+    birth_time: initialValues?.birth_time || '',
+    birth_place: initialValues?.birth_place || '',
+  })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const { t } = useLanguage()

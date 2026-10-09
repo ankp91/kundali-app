@@ -1,14 +1,39 @@
 'use client'
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import BirthForm from '@/components/BirthForm'
 import UploadForm from '@/components/UploadForm'
 import { useLanguage } from '@/components/LanguageProvider'
 
-export default function Home() {
+interface InitialFormValues {
+  name?: string
+  birth_date?: string
+  birth_time?: string
+  birth_place?: string
+}
+
+function HomeContent() {
   const [mode, setMode] = useState<'choose' | 'generate' | 'upload'>('choose')
+  const [initialValues, setInitialValues] = useState<InitialFormValues>({})
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { t } = useLanguage()
+
+  useEffect(() => {
+    const n = searchParams.get('n')
+    const bd = searchParams.get('bd')
+    const bt = searchParams.get('bt')
+    const bp = searchParams.get('bp')
+    if (n || bd || bt || bp) {
+      setInitialValues({
+        name: n || undefined,
+        birth_date: bd || undefined,
+        birth_time: bt || undefined,
+        birth_place: bp || undefined,
+      })
+      setMode('generate')
+    }
+  }, [searchParams])
 
   const handleChart = (chartData: object) => {
     sessionStorage.setItem('kundali', JSON.stringify(chartData))
@@ -20,7 +45,7 @@ export default function Home() {
       <button onClick={() => setMode('choose')} className="text-saffron-400 mb-6 flex items-center gap-2 hover:text-gold-400">
         {t.home.back}
       </button>
-      <BirthForm onChart={handleChart} />
+      <BirthForm onChart={handleChart} initialValues={initialValues} />
     </div>
   )
 
@@ -76,5 +101,13 @@ export default function Home() {
         ))}
       </div>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center h-64 text-saffron-400">Loading...</div>}>
+      <HomeContent />
+    </Suspense>
   )
 }

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from astro import calculate_kundali, get_current_transits, calculate_varshaphal
+from astro import calculate_kundali, get_current_transits, calculate_varshaphal, get_transit_calendar
 from vision import parse_kundali_image
 from matching import calculate_match
 from panchang import calculate_panchang, geocode_place, calculate_monthly_panchang, find_muhurta
@@ -17,6 +17,7 @@ from ai_agent import (
     chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
     stream_full_chart, stream_placement, stream_chat, stream_divisional_chart,
     stream_transits, stream_remedies, stream_varshaphal,
+    stream_prasna, stream_shadbala_insight,
 )
 
 app = FastAPI(title="Kundali API")
@@ -292,3 +293,71 @@ def muhurta(req: MuhurtaRequest):
         return find_muhurta(req.activity, req.date_from, req.date_to, req.lat, req.lon, req.tz)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+class TransitCalendarRequest(BaseModel):
+    chart_data: dict
+    year: int
+    month: int
+
+
+@app.post("/api/transit-calendar")
+def transit_calendar(req: TransitCalendarRequest):
+    try:
+        events = get_transit_calendar(req.chart_data, req.year, req.month)
+        return {"events": events}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class PrasnaRequest(BaseModel):
+    question: str
+    birth_place: str
+    language: str = 'en'
+
+
+@app.post("/api/prasna")
+def prasna(data: PrasnaRequest):
+    try:
+        from datetime import datetime
+        import pytz
+        now = datetime.now(pytz.utc)
+        chart = calculate_kundali(
+            now.strftime("%Y-%m-%d"),
+            now.strftime("%H:%M"),
+            data.birth_place,
+        )
+        chart["return_date"] = now.strftime("%Y-%m-%d")
+        chart["return_time"] = now.strftime("%H:%M")
+        chart["question"] = data.question
+        return chart
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class PrasnaInterpretRequest(BaseModel):
+    question: str
+    chart_data: dict
+    language: str = 'en'
+
+
+@app.post("/api/interpret-prasna")
+def interpret_prasna_route(req: PrasnaInterpretRequest):
+    return StreamingResponse(
+        stream_prasna(req.question, req.chart_data, req.language),
+        media_type="text/plain; charset=utf-8",
+    )
+
+
+class ShadbalRequest(BaseModel):
+    chart_data: dict
+    language: str = 'en'
+
+
+@app.post("/api/interpret-shadbala")
+def interpret_shadbala(req: ShadbalRequest):
+    shadbala = req.chart_data.get("shadbala", {})
+    return StreamingResponse(
+        stream_shadbala_insight(shadbala, req.chart_data, req.language),
+        media_type="text/plain; charset=utf-8",
+    )
