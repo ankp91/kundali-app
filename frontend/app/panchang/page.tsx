@@ -529,6 +529,15 @@ export default function PanchangPage() {
                   <div className="text-xs text-gray-500 mt-1">
                     Nakshatra: {data.nakshatra.name} ({data.nakshatra.name_hi}) · Yoga: {data.yoga.name}
                   </div>
+                  <div className="text-xs text-saffron-400/40 mt-2">
+                    {(() => {
+                      const [srH3, srM3] = data.vedic_time.sunrise.split(':').map(Number)
+                      const [ssH3, ssM3] = data.vedic_time.sunset.split(':').map(Number)
+                      const dMins = (ssH3 * 60 + ssM3) - (srH3 * 60 + srM3)
+                      const nMins = 1440 - dMins
+                      return `Ghati length varies by season · day: ${(dMins / 30).toFixed(1)} min · night: ${(nMins / 30).toFixed(1)} min`
+                    })()}
+                  </div>
                 </div>
 
                 {/* Explanation */}
