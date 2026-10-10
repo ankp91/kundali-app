@@ -78,12 +78,20 @@ function computeLiveVedic(sunrise: string, sunset: string, ghatiDurMin: number, 
   }
   const srMin   = srH * 60 + srM
   const ssMin   = ssH * 60 + ssM
-  const dayMins = ssMin - srMin
-  const isDay   = nowMin >= srMin && nowMin <= ssMin
+  const dayMins   = ssMin - srMin
+  const nightMins = 1440 - dayMins
+  const isDay     = nowMin >= srMin && nowMin <= ssMin
 
-  // Fixed-ghati system: 1 Ghati = 24 min, 60 Ghati = full day from sunrise
-  const elapsed = nowMin - srMin
-  const ghatiF  = elapsed / 24
+  // Dynamic 30+30 system: 30 Ghati daytime + 30 Ghati nighttime = 60 total
+  let ghatiF: number
+  if (isDay) {
+    ghatiF = ((nowMin - srMin) / dayMins) * 30
+  } else if (nowMin > ssMin) {
+    ghatiF = 30 + ((nowMin - ssMin) / nightMins) * 30
+  } else {
+    // Before sunrise — continuation of previous night
+    ghatiF = 30 + ((nowMin - ssMin + 1440) / nightMins) * 30
+  }
   const ghati   = Math.max(0, Math.floor(ghatiF))
   const palaF   = (ghatiF - Math.floor(Math.max(0, ghatiF))) * 60
   const pala    = Math.max(0, Math.floor(palaF))
@@ -502,7 +510,7 @@ export default function PanchangPage() {
                   )}
                   <p className="text-saffron-400/50 text-xs mt-1">
                     Sunrise {data.vedic_time.sunrise} · Sunset {data.vedic_time.sunset}
-                    {' '}· 1 Ghati = 24 min (fixed)
+                    {' '}· 30 Ghati day · 30 Ghati night
                   </p>
                 </div>
 
