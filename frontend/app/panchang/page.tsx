@@ -516,7 +516,7 @@ export default function PanchangPage() {
                     const dMins = (ssH2 * 60 + ssM2) - (srH2 * 60 + srM2)
                     const dur = liveVedic?.isDay ? dMins / 30 : (1440 - dMins) / 30
                     return dur.toFixed(1)
-                  })()} min today
+                  })()} mins {liveVedic?.isDay ? 'today' : 'tonight'}
                   </p>
                   {/* Tithi details row — like Drik Panchang */}
                   <div className="mt-3 pt-3 border-t border-saffron-700/20 text-sm text-gray-300">
