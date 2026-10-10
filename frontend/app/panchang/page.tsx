@@ -510,7 +510,13 @@ export default function PanchangPage() {
                   )}
                   <p className="text-saffron-400/50 text-xs mt-1">
                     Sunrise {data.vedic_time.sunrise} · Sunset {data.vedic_time.sunset}
-                    {' '}· 30 Ghati day · 30 Ghati night
+                    {' '}· 1 Ghati ≈ {(() => {
+                    const [srH2, srM2] = data.vedic_time.sunrise.split(':').map(Number)
+                    const [ssH2, ssM2] = data.vedic_time.sunset.split(':').map(Number)
+                    const dMins = (ssH2 * 60 + ssM2) - (srH2 * 60 + srM2)
+                    const dur = liveVedic?.isDay ? dMins / 30 : (1440 - dMins) / 30
+                    return dur.toFixed(1)
+                  })()} min today
                   </p>
                 </div>
 
