@@ -518,6 +518,17 @@ export default function PanchangPage() {
                     return dur.toFixed(1)
                   })()} min today
                   </p>
+                  {/* Tithi details row — like Drik Panchang */}
+                  <div className="mt-3 pt-3 border-t border-saffron-700/20 text-sm text-gray-300">
+                    {data.tithi.paksha} {data.tithi.name}
+                    <span className="mx-2 text-saffron-700/50">·</span>
+                    {data.samvat.vikram} Vikrama Samvat
+                    <span className="mx-2 text-saffron-700/50">·</span>
+                    {data.vara.name}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Nakshatra: {data.nakshatra.name} ({data.nakshatra.name_hi}) · Yoga: {data.yoga.name}
+                  </div>
                 </div>
 
                 {/* Explanation */}
