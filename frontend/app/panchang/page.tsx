@@ -62,11 +62,20 @@ const TODAY = new Date().toISOString().slice(0, 10)
 
 // ── Vedic time client-side compute ────────────────────────────────────────────
 
-function computeLiveVedic(sunrise: string, sunset: string, ghatiDurMin: number): LiveVedic {
+function computeLiveVedic(sunrise: string, sunset: string, ghatiDurMin: number, tz?: string): LiveVedic {
   const [srH, srM] = sunrise.split(':').map(Number)
   const [ssH, ssM] = sunset.split(':').map(Number)
   const now     = new Date()
-  const nowMin  = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60
+  let nowMin: number
+  if (tz) {
+    const parts = new Intl.DateTimeFormat('en', { timeZone: tz, hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false }).formatToParts(now)
+    const h = Number(parts.find(p => p.type === 'hour')?.value ?? 0)
+    const m = Number(parts.find(p => p.type === 'minute')?.value ?? 0)
+    const s = Number(parts.find(p => p.type === 'second')?.value ?? 0)
+    nowMin = h * 60 + m + s / 60
+  } else {
+    nowMin = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60
+  }
   const srMin   = srH * 60 + srM
   const ssMin   = ssH * 60 + ssM
   const dayMins = ssMin - srMin
@@ -132,11 +141,12 @@ export default function PanchangPage() {
   useEffect(() => {
     if (!data) return
     const { sunrise, sunset, ghati_duration_min } = data.vedic_time
-    const tick = () => setLiveVedic(computeLiveVedic(sunrise, sunset, ghati_duration_min))
+    const tz = location?.tz
+    const tick = () => setLiveVedic(computeLiveVedic(sunrise, sunset, ghati_duration_min, tz))
     tick()
     const timer = setInterval(tick, 1000)
     return () => clearInterval(timer)
-  }, [data])
+  }, [data, location])
 
   const searchLocation = async () => {
     if (!query.trim()) return
