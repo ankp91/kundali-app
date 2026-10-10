@@ -328,14 +328,14 @@ def _hora(jd_sr: float, weekday: int, tz: str) -> list:
 def _vedic_time(jd_sr: float, jd_ss: float, tz: str) -> dict:
     now_jd      = _now_jd()
     day_dur_jd  = jd_ss - jd_sr
-    day_minutes = day_dur_jd * 24 * 60
-    ghati_mins  = day_minutes / 60
 
     is_day      = jd_sr <= now_jd <= jd_ss
     elapsed_jd  = max(0.0, now_jd - jd_sr)
 
-    ghati_f  = (elapsed_jd / day_dur_jd) * 60
-    ghati    = int(ghati_f)
+    # Fixed-ghati system: 1 Ghati = 24 min (1440 min / 60), counted from sunrise
+    ghati_mins  = 24.0
+    ghati_f     = elapsed_jd * 60  # elapsed_jd is fraction of a full day; * 60 = ghati
+    ghati       = int(ghati_f)
     pala_f   = (ghati_f - ghati) * 60
     pala     = int(pala_f)
     vipala   = int((pala_f - pala) * 60)
