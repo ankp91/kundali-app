@@ -73,47 +73,127 @@ _MASA_NAMES = [
 ]
 
 _FESTIVALS = {
-    ('Chaitra',      'Shukla',  1):  'Gudi Padwa · Ugadi · Chaitra Navratri',
-    ('Chaitra',      'Shukla',  9):  'Ram Navami',
-    ('Chaitra',      'Shukla', 15):  'Hanuman Jayanti',
-    ('Vaishakha',    'Shukla',  3):  'Akshaya Tritiya',
-    ('Vaishakha',    'Shukla', 15):  'Buddha Purnima',
-    ('Ashadha',      'Shukla',  2):  'Rath Yatra',
-    ('Ashadha',      'Shukla', 15):  'Guru Purnima',
-    ('Shravana',     'Shukla',  5):  'Nag Panchami',
-    ('Shravana',     'Shukla', 15):  'Raksha Bandhan',
-    ('Shravana',     'Krishna', 8):  'Janmashtami',
-    ('Bhadrapada',   'Shukla',  4):  'Ganesh Chaturthi',
-    ('Bhadrapada',   'Shukla', 14):  'Anant Chaturdashi',
-    ('Ashwin',       'Shukla',  1):  'Sharad Navratri Begins',
-    ('Ashwin',       'Shukla',  9):  'Maha Navami',
-    ('Ashwin',       'Shukla', 10):  'Dussehra (Vijaya Dashami)',
-    ('Ashwin',       'Krishna',13):  'Dhanteras',
-    ('Ashwin',       'Krishna',14):  'Narak Chaturdashi',
-    ('Ashwin',       'Krishna',15):  'Diwali · Lakshmi Puja',
-    ('Kartik',       'Shukla',  1):  'Govardhan Puja',
-    ('Kartik',       'Shukla',  2):  'Bhai Dooj',
-    ('Kartik',       'Shukla', 11):  'Dev Uthani Ekadashi',
-    ('Kartik',       'Shukla', 15):  'Kartik Purnima · Dev Diwali',
-    ('Magha',        'Shukla',  5):  'Vasant Panchami',
-    ('Magha',        'Shukla', 15):  'Magha Purnima',
-    ('Phalguna',     'Krishna',14):  'Maha Shivratri',
-    ('Phalguna',     'Shukla', 15):  'Holi · Holika Dahan',
+    # ── Chaitra ───────────────────────────────────────────────────────────
+    ('Chaitra', 'Shukla',  1):  'Gudi Padwa · Ugadi · Chaitra Navratri Begins',
+    ('Chaitra', 'Shukla',  2):  'Chaitra Navratri Day 2',
+    ('Chaitra', 'Shukla',  3):  'Chaitra Navratri Day 3 · Saubhagya Teej',
+    ('Chaitra', 'Shukla',  4):  'Chaitra Navratri Day 4 · Vinayaka Chaturthi',
+    ('Chaitra', 'Shukla',  5):  'Chaitra Navratri Day 5 · Lakshmi Panchami',
+    ('Chaitra', 'Shukla',  6):  'Chaitra Navratri Day 6 · Skanda Shashthi',
+    ('Chaitra', 'Shukla',  7):  'Chaitra Navratri Day 7 · Chaitra Saptami',
+    ('Chaitra', 'Shukla',  8):  'Chaitra Navratri Day 8 · Durgashtami',
+    ('Chaitra', 'Shukla',  9):  'Ram Navami · Chaitra Navratri Day 9',
+    ('Chaitra', 'Shukla', 13):  'Mahavir Jayanti (approx)',
+    ('Chaitra', 'Shukla', 15):  'Hanuman Jayanti · Chaitra Purnima',
+    ('Chaitra', 'Krishna', 8):  'Sita Ashtami',
+    # ── Vaishakha ─────────────────────────────────────────────────────────
+    ('Vaishakha', 'Shukla',  3):  'Akshaya Tritiya · Parashurama Jayanti',
+    ('Vaishakha', 'Shukla',  6):  'Shankaracharya Jayanti',
+    ('Vaishakha', 'Shukla', 15):  'Buddha Purnima · Vaishakha Purnima',
+    ('Vaishakha', 'Krishna',15):  'Vaishakha Amavasya',
+    # ── Jyeshtha ──────────────────────────────────────────────────────────
+    ('Jyeshtha', 'Shukla',  3):  'Shani Jayanti · Vat Savitri Vrat',
+    ('Jyeshtha', 'Shukla', 10):  'Ganga Dussehra',
+    ('Jyeshtha', 'Shukla', 11):  'Nirjala Ekadashi',
+    ('Jyeshtha', 'Shukla', 15):  'Jyeshtha Purnima · Vat Purnima',
+    # ── Ashadha ───────────────────────────────────────────────────────────
+    ('Ashadha', 'Shukla',  2):  'Rath Yatra · Jagannath Rath Yatra',
+    ('Ashadha', 'Shukla', 11):  'Devshayani Ekadashi · Chaturmas Begins',
+    ('Ashadha', 'Shukla', 15):  'Guru Purnima · Ashadha Purnima',
+    ('Ashadha', 'Krishna', 8):  'Kalashtami',
+    ('Ashadha', 'Krishna',15):  'Ashadha Amavasya',
+    # ── Shravana ──────────────────────────────────────────────────────────
+    ('Shravana', 'Shukla',  5):  'Nag Panchami',
+    ('Shravana', 'Shukla', 11):  'Putrada Ekadashi',
+    ('Shravana', 'Shukla', 15):  'Raksha Bandhan · Shravana Purnima · Avani Avittam',
+    ('Shravana', 'Krishna', 8):  'Janmashtami · Krishna Janmashtami',
+    ('Shravana', 'Krishna',15):  'Shravana Amavasya · Pithru Amavasya',
+    # ── Bhadrapada ────────────────────────────────────────────────────────
+    ('Bhadrapada', 'Shukla',  3):  'Hartalika Teej',
+    ('Bhadrapada', 'Shukla',  4):  'Ganesh Chaturthi · Vinayaka Chaturthi',
+    ('Bhadrapada', 'Shukla',  5):  'Rishi Panchami',
+    ('Bhadrapada', 'Shukla',  6):  'Skanda Shashthi',
+    ('Bhadrapada', 'Shukla',  8):  'Radha Ashtami',
+    ('Bhadrapada', 'Shukla', 11):  'Parivartini Ekadashi · Vaman Ekadashi',
+    ('Bhadrapada', 'Shukla', 12):  'Vaman Jayanti',
+    ('Bhadrapada', 'Shukla', 14):  'Anant Chaturdashi · Ganesh Visarjan',
+    ('Bhadrapada', 'Shukla', 15):  'Bhadrapada Purnima',
+    ('Bhadrapada', 'Krishna', 8):  'Janmashtami (some traditions)',
+    ('Bhadrapada', 'Krishna',15):  'Bhadrapada Amavasya · Mahalaya Amavasya',
+    # ── Ashwin ────────────────────────────────────────────────────────────
+    ('Ashwin', 'Shukla',  1):  'Sharad Navratri Begins · Ghatasthapana',
+    ('Ashwin', 'Shukla',  2):  'Sharad Navratri Day 2',
+    ('Ashwin', 'Shukla',  3):  'Sharad Navratri Day 3',
+    ('Ashwin', 'Shukla',  4):  'Sharad Navratri Day 4 · Varad Vinayaka',
+    ('Ashwin', 'Shukla',  5):  'Sharad Navratri Day 5 · Lalita Panchami',
+    ('Ashwin', 'Shukla',  6):  'Sharad Navratri Day 6 · Durga Shashthi',
+    ('Ashwin', 'Shukla',  7):  'Sharad Navratri Day 7 · Durga Saptami',
+    ('Ashwin', 'Shukla',  8):  'Sharad Navratri Day 8 · Maha Durgashtami',
+    ('Ashwin', 'Shukla',  9):  'Maha Navami · Sharad Navratri Day 9',
+    ('Ashwin', 'Shukla', 10):  'Dussehra · Vijaya Dashami',
+    ('Ashwin', 'Shukla', 11):  'Papankusha Ekadashi',
+    ('Ashwin', 'Shukla', 15):  'Sharad Purnima · Kojagara Purnima · Laxmi Puja',
+    ('Ashwin', 'Krishna', 1):  'Pitru Paksha Begins',
+    ('Ashwin', 'Krishna',13):  'Dhanteras · Dhanvantari Jayanti',
+    ('Ashwin', 'Krishna',14):  'Narak Chaturdashi · Choti Diwali · Hanuman Puja',
+    ('Ashwin', 'Krishna',15):  'Diwali · Lakshmi Puja · Ashwin Amavasya',
+    # ── Kartik ────────────────────────────────────────────────────────────
+    ('Kartik', 'Shukla',  1):  'Govardhan Puja · Annakut',
+    ('Kartik', 'Shukla',  2):  'Bhai Dooj · Yama Dwithiya',
+    ('Kartik', 'Shukla',  6):  'Chhath Puja · Surya Shashthi',
+    ('Kartik', 'Shukla',  8):  'Gopa Ashtami',
+    ('Kartik', 'Shukla', 11):  'Dev Uthani Ekadashi · Tulsi Vivah · Prabodhini Ekadashi',
+    ('Kartik', 'Shukla', 12):  'Tulsi Vivah (alternate)',
+    ('Kartik', 'Shukla', 15):  'Kartik Purnima · Dev Diwali · Guru Nanak Jayanti',
+    ('Kartik', 'Krishna',15):  'Kartik Amavasya',
+    # ── Margashirsha ──────────────────────────────────────────────────────
+    ('Margashirsha', 'Shukla', 11):  'Geeta Jayanti · Mokshada Ekadashi',
+    ('Margashirsha', 'Shukla', 15):  'Margashirsha Purnima · Dattatreya Jayanti',
+    ('Margashirsha', 'Krishna',15):  'Margashirsha Amavasya',
+    # ── Pausha ────────────────────────────────────────────────────────────
+    ('Pausha', 'Shukla', 15):  'Pausha Purnima · Shakambhari Purnima',
+    ('Pausha', 'Krishna',15):  'Mauni Amavasya · Pausha Amavasya',
+    # ── Magha ─────────────────────────────────────────────────────────────
+    ('Magha', 'Shukla',  5):  'Vasant Panchami · Saraswati Puja',
+    ('Magha', 'Shukla', 15):  'Magha Purnima',
+    ('Magha', 'Krishna', 4):  'Sakat Chauth',
+    ('Magha', 'Krishna',13):  'Maha Shivratri (some years)',
+    ('Magha', 'Krishna',15):  'Magha Amavasya',
+    # ── Phalguna ──────────────────────────────────────────────────────────
+    ('Phalguna', 'Shukla', 15):  'Holi · Holika Dahan · Phalguna Purnima',
+    ('Phalguna', 'Krishna', 4):  'Vinayaka Chaturthi',
+    ('Phalguna', 'Krishna',13):  'Maha Shivratri (some years)',
+    ('Phalguna', 'Krishna',14):  'Maha Shivratri',
+    ('Phalguna', 'Krishna',15):  'Phalguna Amavasya',
 }
 
 
 def _get_masa(jd: float) -> str:
-    lon       = swe.calc_ut(jd, swe.SUN, swe.FLG_SWIEPH)[0][0]
-    ayanamsha = swe.get_ayanamsa_ut(jd)
-    sidereal  = (lon - ayanamsha) % 360
-    return _MASA_NAMES[int(sidereal // 30)]
+    sun_lon      = swe.calc_ut(jd, swe.SUN,  swe.FLG_SWIEPH)[0][0]
+    moon_lon     = swe.calc_ut(jd, swe.MOON, swe.FLG_SWIEPH)[0][0]
+    ayanamsha    = swe.get_ayanamsa_ut(jd)
+    sun_sidereal = (sun_lon - ayanamsha) % 360
+    sun_sign     = int(sun_sidereal // 30)
+    moon_sun_diff = (moon_lon - sun_lon) % 360
+    if moon_sun_diff < 6:
+        # Near Amavasya — last day of the current month
+        return _MASA_NAMES[sun_sign]
+    elif moon_sun_diff < 180:
+        # Shukla Paksha — new month has begun after the Amavasya
+        return _MASA_NAMES[(sun_sign + 1) % 12]
+    else:
+        # Krishna Paksha — second half of the current month
+        return _MASA_NAMES[sun_sign]
 
 
 def _get_festival(masa: str, paksha: str, tithi_num: int) -> str:
     fest = _FESTIVALS.get((masa, paksha, tithi_num), '')
     if tithi_num == 11:
-        ekadashi = 'Ekadashi'
-        fest = f"{fest} · {ekadashi}" if fest else ekadashi
+        fest = (fest + ' · Ekadashi') if fest else 'Ekadashi'
+    if tithi_num == 15 and paksha == 'Shukla' and 'Purnima' not in fest:
+        fest = (fest + ' · Purnima') if fest else 'Purnima'
+    if tithi_num == 15 and paksha == 'Krishna' and 'Amavasya' not in fest:
+        fest = (fest + ' · Amavasya') if fest else 'Amavasya'
     return fest
 
 
@@ -465,6 +545,12 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
         paksha   = 'Shukla' if tithi_i < 15 else 'Krishna'
         masa     = _get_masa(jd_noon)
         festival = _get_festival(masa, paksha, tithi_i + 1)
+        # Solar festival: Makar Sankranti when Sun crosses into sidereal Capricorn
+        sun_sid_noon  = _sidereal(jd_noon, swe.SUN)
+        sun_sid_prev  = _sidereal(jd_noon - 1.0, swe.SUN)
+        if sun_sid_prev < 270 <= sun_sid_noon or (sun_sid_prev > 300 and sun_sid_noon < 30):
+            sankranti = 'Makar Sankranti · Pongal · Lohri · Uttarayan'
+            festival  = (festival + ' · ' + sankranti) if festival else sankranti
         kalams   = _kalam_times(jd_sr, jd_ss, weekday, tz_str)
         return {
             "date": date_str,
