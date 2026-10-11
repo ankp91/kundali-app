@@ -66,6 +66,56 @@ GULIKAI_SLOT    = [7, 6, 5, 4, 3, 2, 1]   # Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, F
 
 RITU_NAMES = ['Vasanta','Grishma','Varsha','Sharad','Hemanta','Shishira']
 
+_MASA_NAMES = [
+    'Chaitra', 'Vaishakha', 'Jyeshtha', 'Ashadha',
+    'Shravana', 'Bhadrapada', 'Ashwin', 'Kartik',
+    'Margashirsha', 'Pausha', 'Magha', 'Phalguna',
+]
+
+_FESTIVALS = {
+    ('Chaitra',      'Shukla',  1):  'Gudi Padwa · Ugadi · Chaitra Navratri',
+    ('Chaitra',      'Shukla',  9):  'Ram Navami',
+    ('Chaitra',      'Shukla', 15):  'Hanuman Jayanti',
+    ('Vaishakha',    'Shukla',  3):  'Akshaya Tritiya',
+    ('Vaishakha',    'Shukla', 15):  'Buddha Purnima',
+    ('Ashadha',      'Shukla',  2):  'Rath Yatra',
+    ('Ashadha',      'Shukla', 15):  'Guru Purnima',
+    ('Shravana',     'Shukla',  5):  'Nag Panchami',
+    ('Shravana',     'Shukla', 15):  'Raksha Bandhan',
+    ('Shravana',     'Krishna', 8):  'Janmashtami',
+    ('Bhadrapada',   'Shukla',  4):  'Ganesh Chaturthi',
+    ('Bhadrapada',   'Shukla', 14):  'Anant Chaturdashi',
+    ('Ashwin',       'Shukla',  1):  'Sharad Navratri Begins',
+    ('Ashwin',       'Shukla',  9):  'Maha Navami',
+    ('Ashwin',       'Shukla', 10):  'Dussehra (Vijaya Dashami)',
+    ('Ashwin',       'Krishna',13):  'Dhanteras',
+    ('Ashwin',       'Krishna',14):  'Narak Chaturdashi',
+    ('Ashwin',       'Krishna',15):  'Diwali · Lakshmi Puja',
+    ('Kartik',       'Shukla',  1):  'Govardhan Puja',
+    ('Kartik',       'Shukla',  2):  'Bhai Dooj',
+    ('Kartik',       'Shukla', 11):  'Dev Uthani Ekadashi',
+    ('Kartik',       'Shukla', 15):  'Kartik Purnima · Dev Diwali',
+    ('Magha',        'Shukla',  5):  'Vasant Panchami',
+    ('Magha',        'Shukla', 15):  'Magha Purnima',
+    ('Phalguna',     'Krishna',14):  'Maha Shivratri',
+    ('Phalguna',     'Shukla', 15):  'Holi · Holika Dahan',
+}
+
+
+def _get_masa(jd: float) -> str:
+    lon       = swe.calc_ut(jd, swe.SUN, swe.FLG_SWIEPH)[0][0]
+    ayanamsha = swe.get_ayanamsa_ut(jd)
+    sidereal  = (lon - ayanamsha) % 360
+    return _MASA_NAMES[int(sidereal // 30)]
+
+
+def _get_festival(masa: str, paksha: str, tithi_num: int) -> str:
+    fest = _FESTIVALS.get((masa, paksha, tithi_num), '')
+    if tithi_num == 11:
+        ekadashi = 'Ekadashi'
+        fest = f"{fest} · {ekadashi}" if fest else ekadashi
+    return fest
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -244,8 +294,10 @@ def calculate_panchang(date_str: str, lat: float, lon: float, tz_str: str) -> di
     ritu  = RITU_NAMES[int(sun_sid / 60) % 6]
     ayana = 'Uttarayana' if (sun_sid < 90 or sun_sid >= 270) else 'Dakshinayana'
 
+    masa = _get_masa(jd_sr)
     return {
         'date': date_str,
+        'masa': masa,
         'vara': {'name': VARA[weekday], 'name_hi': VARA_HI[weekday], 'lord': VARA_LORD[weekday]},
         'tithi': {
             'name': TITHI[tithi_i], 'number': tithi_i + 1,
@@ -398,7 +450,7 @@ _GOOD_CHOG = {"Amrit", "Shubh", "Labh"}
 
 
 def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | None:
-    """Lightweight daily panchang — tithi/nakshatra/yoga/sunrise only."""
+    """Lightweight daily panchang — tithi/nakshatra/yoga/sunrise + masa/festival/rahu."""
     try:
         jd_noon = _local_to_jd(date_str, 12.0, tz_str)
         jd_sr   = _rise_set(jd_noon - 0.5, swe.SUN, swe.CALC_RISE, lat, lon)
@@ -411,11 +463,15 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
         nak_i    = int(moon_sid / (360 / 27))
         yoga_i   = int(((sun_sid + moon_sid) % 360) / (360 / 27))
         paksha   = 'Shukla' if tithi_i < 15 else 'Krishna'
+        masa     = _get_masa(jd_noon)
+        festival = _get_festival(masa, paksha, tithi_i + 1)
+        kalams   = _kalam_times(jd_sr, jd_ss, weekday, tz_str)
         return {
             "date": date_str,
             "weekday": weekday,
             "day_of_week": VARA[weekday],
             "day_of_week_hi": VARA_HI[weekday],
+            "vara": VARA[weekday],
             "tithi": TITHI[tithi_i],
             "tithi_num": tithi_i + 1,
             "paksha": paksha,
@@ -425,6 +481,10 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
             "yoga": YOGA[yoga_i],
             "yoga_idx": yoga_i,
             "sunrise": _fmt(jd_sr, tz_str),
+            "masa": masa,
+            "festival": festival,
+            "rahu_start": kalams['rahu_kalam']['start'],
+            "rahu_end":   kalams['rahu_kalam']['end'],
             "jd_sr": jd_sr,
             "jd_ss": jd_ss,
         }

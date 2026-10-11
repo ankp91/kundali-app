@@ -13,6 +13,7 @@ interface Kalam     { start: string; end: string }
 
 interface Panchang {
   date: string
+  masa?: string
   vara:      { name: string; name_hi: string; lord: string }
   tithi:     { name: string; number: number; paksha: string; end_time: string }
   nakshatra: { name: string; name_hi: string; pada: number; end_time: string }
@@ -35,6 +36,8 @@ interface CalDay {
   date: string; weekday: number; day_of_week: string; tithi: string; tithi_num: number
   nakshatra: string; nakshatra_hi: string; yoga: string; sunrise: string
   is_today: boolean; is_auspicious: boolean
+  masa: string; festival: string; paksha: string; vara: string
+  rahu_start: string; rahu_end: string
 }
 interface MuhurtaSlot {
   date: string; day_of_week: string; time_from: string; time_to: string
@@ -117,6 +120,7 @@ export default function PanchangPage() {
   const [calMonth, setCalMonth] = useState(new Date().getMonth() + 1)
   const [calData, setCalData] = useState<CalDay[]>([])
   const [calLoading, setCalLoading] = useState(false)
+  const [selectedDay, setSelectedDay] = useState<CalDay | null>(null)
 
   // Muhurta state
   const [muhurtaActivity, setMuhurtaActivity] = useState('business')
@@ -520,7 +524,7 @@ export default function PanchangPage() {
                   </p>
                   {/* Tithi details row — like Drik Panchang */}
                   <div className="mt-3 pt-3 border-t border-saffron-700/20 text-sm text-gray-300">
-                    {data.tithi.paksha} {data.tithi.name}
+                    {data.masa && <>{data.masa} · </>}{data.tithi.paksha} {data.tithi.name}
                     <span className="mx-2 text-saffron-700/50">·</span>
                     {data.samvat.vikram} Vikrama Samvat
                     <span className="mx-2 text-saffron-700/50">·</span>
@@ -599,18 +603,30 @@ export default function PanchangPage() {
                         return weeks.map((week, wi) => (
                           <div key={wi} className="grid grid-cols-7 gap-1 mb-1">
                             {week.map((day, di) => (
-                              <div key={di} className={`rounded-lg p-1.5 min-h-[64px] border text-xs ${
-                                day?.is_today ? 'border-gold-400/60 bg-gold-400/10' :
-                                day?.is_auspicious ? 'border-green-500/30 bg-green-500/5' :
-                                'border-saffron-700/20 bg-deepblue-950/50'
-                              }`}>
+                              <div
+                                key={di}
+                                onClick={() => day && setSelectedDay(selectedDay?.date === day.date ? null : day)}
+                                className={`rounded-xl p-2 min-h-[80px] border text-xs cursor-pointer transition-all ${
+                                  day?.date === selectedDay?.date ? 'border-gold-400 bg-gold-400/10' :
+                                  day?.is_today ? 'border-saffron-500/60 bg-saffron-600/10' :
+                                  day?.is_auspicious ? 'border-green-500/30 bg-green-500/5' :
+                                  day ? 'border-saffron-700/20 bg-deepblue-950/50 hover:border-saffron-600/40' :
+                                  'border-transparent'
+                                }`}
+                              >
                                 {day && (
                                   <>
-                                    <div className="font-bold text-gray-200">{new Date(day.date).getDate()}</div>
-                                    <div className="text-gray-500 text-[10px] leading-tight truncate">{day.tithi}</div>
-                                    <div className="text-gray-600 text-[10px] leading-tight truncate">{day.nakshatra}</div>
-                                    {day.is_auspicious && <div className="w-1.5 h-1.5 bg-green-400 rounded-full mt-0.5" />}
-                                    {day.is_today && <div className="text-gold-400 text-[10px] font-bold">Today</div>}
+                                    <div className="font-bold text-base text-gray-100">{new Date(day.date + 'T12:00:00').getDate()}</div>
+                                    <div className="text-[10px] text-saffron-400 leading-tight mt-0.5">
+                                      {day.paksha === 'Krishna' ? 'K' : 'S'} {day.tithi_num}
+                                    </div>
+                                    <div className="text-[10px] text-gray-500 leading-tight truncate">{day.nakshatra}</div>
+                                    {day.festival && (
+                                      <div className="mt-1 text-[9px] bg-gold-400/20 text-gold-400 px-1 py-0.5 rounded leading-tight line-clamp-2">
+                                        {day.festival.split('·')[0].trim()}
+                                      </div>
+                                    )}
+                                    {day.is_today && <div className="text-[9px] text-saffron-400 font-bold mt-0.5">Today</div>}
                                   </>
                                 )}
                               </div>
@@ -619,9 +635,53 @@ export default function PanchangPage() {
                         ))
                       })()}
                       <div className="mt-3 flex gap-4 text-xs text-gray-500">
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1" />Auspicious day</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-gold-400 mr-1" />Today</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1" />Auspicious</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-saffron-400 mr-1" />Today</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-gold-400 mr-1" />Selected</span>
+                        <span className="text-saffron-400/60">K=Krishna · S=Shukla</span>
                       </div>
+
+                      {/* Day detail panel */}
+                      {selectedDay && (
+                        <div className="mt-4 bg-deepblue-950 border border-gold-400/30 rounded-xl p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h3 className="text-gold-400 font-bold">
+                              {new Date(selectedDay.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                            </h3>
+                            <button onClick={() => setSelectedDay(null)} className="text-gray-500 hover:text-gray-300 text-lg leading-none">✕</button>
+                          </div>
+
+                          {selectedDay.festival && (
+                            <div className="bg-gold-400/10 border border-gold-400/30 rounded-lg px-3 py-2">
+                              <span className="text-gold-400 text-sm font-medium">🎉 {selectedDay.festival}</span>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2">
+                            {[
+                              { label: 'Masa',       value: selectedDay.masa || '—' },
+                              { label: 'Tithi',      value: `${selectedDay.paksha} ${selectedDay.tithi} (${selectedDay.tithi_num})` },
+                              { label: 'Nakshatra',  value: `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
+                              { label: 'Yoga',       value: selectedDay.yoga },
+                              { label: 'Vara',       value: selectedDay.vara || selectedDay.day_of_week },
+                              { label: 'Sunrise',    value: selectedDay.sunrise },
+                              { label: 'Rahu Kalam', value: `${selectedDay.rahu_start} – ${selectedDay.rahu_end}` },
+                            ].map(({ label, value }) => (
+                              <div key={label} className="bg-deepblue-900/60 rounded-lg px-3 py-2">
+                                <div className="text-saffron-400/60 text-xs">{label}</div>
+                                <div className="text-gray-200 font-medium text-xs mt-0.5">{value}</div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex gap-2 flex-wrap">
+                            {selectedDay.is_auspicious && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-full">✓ Auspicious Day</span>}
+                            {selectedDay.tithi_num === 11 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">🙏 Ekadashi</span>}
+                            {selectedDay.tithi_num === 15 && <span className="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-1 rounded-full">🌕 Purnima</span>}
+                            {selectedDay.tithi_num === 30 && <span className="text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30 px-2 py-1 rounded-full">🌑 Amavasya</span>}
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                   {!location && <p className="text-gray-500 text-sm text-center py-4">Set a location first to view monthly panchang.</p>}
