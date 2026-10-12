@@ -10,9 +10,9 @@ export default function NavBar() {
         <a href="/learn" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.learn}</a>
         <a href="/match" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.match}</a>
         <a href="/panchang" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.panchang}</a>
-        <a href="/saved" className="text-saffron-400 hover:text-gold-400 transition text-sm">Saved</a>
-        <a href="/varshaphal" className="text-saffron-400 hover:text-gold-400 transition text-sm">Varshaphal</a>
-        <a href="/prasna" className="text-saffron-400 hover:text-gold-400 transition text-sm">Prasna</a>
+        <a href="/saved" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.saved}</a>
+        <a href="/varshaphal" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.varshaphal}</a>
+        <a href="/prasna" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.prasna}</a>
         <div className="ml-auto">
           <button
             onClick={toggle}
