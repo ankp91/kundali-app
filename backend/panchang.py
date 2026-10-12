@@ -434,8 +434,13 @@ def calculate_panchang(date_str: str, lat: float, lon: float, tz_str: str) -> di
     solar_noon    = (jd_sr + jd_ss) / 2
     brahma_start  = _fmt(jd_sr - 96.0 / 1440, tz_str)
     brahma_end    = _fmt(jd_sr - 48.0 / 1440, tz_str)
-    abhijit_start = _fmt(solar_noon - 24.0 / 1440, tz_str)
-    abhijit_end   = _fmt(solar_noon + 24.0 / 1440, tz_str)
+    # Abhijit Muhurta is not observed on Wednesday (Budhvaar) — traditional rule
+    if weekday == 3:  # Wednesday
+        abhijit_start = None
+        abhijit_end   = None
+    else:
+        abhijit_start = _fmt(solar_noon - 24.0 / 1440, tz_str)
+        abhijit_end   = _fmt(solar_noon + 24.0 / 1440, tz_str)
     godhuli_start = _fmt(jd_ss - 12.0 / 1440, tz_str)
     godhuli_end   = _fmt(jd_ss + 12.0 / 1440, tz_str)
 
@@ -569,8 +574,9 @@ def _vedic_time(jd_sr: float, jd_ss: float, tz: str) -> dict:
     day_dur_jd  = jd_ss - jd_sr
     night_dur_jd = 1.0 - day_dur_jd  # full day minus daytime
 
-    is_day      = jd_sr <= now_jd <= jd_ss
-    ghati_mins  = round((day_dur_jd * 24 * 60) / 30, 1)  # day-ghati duration in minutes
+    is_day           = jd_sr <= now_jd <= jd_ss
+    ghati_mins       = round((day_dur_jd   * 24 * 60) / 30, 1)
+    night_ghati_mins = round((night_dur_jd * 24 * 60) / 30, 1)
 
     # Dynamic 30+30 system: 30 Ghati day + 30 Ghati night = 60 total
     if is_day:
@@ -591,7 +597,8 @@ def _vedic_time(jd_sr: float, jd_ss: float, tz: str) -> dict:
         'pala':   pala,
         'vipala': vipala,
         'is_day': is_day,
-        'ghati_duration_min': round(ghati_mins, 1),
+        'ghati_duration_min':       ghati_mins,
+        'night_ghati_duration_min': night_ghati_mins,
         'sunrise': _fmt(jd_sr, tz),
         'sunset':  _fmt(jd_ss, tz),
     }

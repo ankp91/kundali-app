@@ -361,3 +361,193 @@ def interpret_shadbala(req: ShadbalRequest):
         stream_shadbala_insight(shadbala, req.chart_data, req.language),
         media_type="text/plain; charset=utf-8",
     )
+
+
+# ── Dosha Checker ─────────────────────────────────────────────────────────────
+
+class DoshaRequest(BaseModel):
+    planets: dict
+    ascendant: dict
+
+
+_SIGNS = ["Aries","Taurus","Gemini","Cancer","Leo","Virgo",
+          "Libra","Scorpio","Sagittarius","Capricorn","Aquarius","Pisces"]
+
+_KSD_NAMES = {
+    0:"Ananta",1:"Kulik",2:"Vasuki",3:"Shankhapal",4:"Padma",5:"Mahapadma",
+    6:"Takshak",7:"Karkotak",8:"Shankhachur",9:"Ghatak",10:"Vishdhar",11:"Sheshnag"
+}
+
+
+@app.post("/api/dosha")
+def check_dosha(req: DoshaRequest):
+    import swisseph as swe, time as _time
+
+    planets = req.planets
+
+    # ── Mangal Dosha ──────────────────────────────────────────────────────────
+    mars_house = planets.get("Mars", {}).get("house", 0)
+    mangal_present = mars_house in {1, 2, 4, 7, 8, 12}
+    if mars_house in {7, 8}:
+        mangal_severity = "High"
+    elif mars_house in {1, 4}:
+        mangal_severity = "Medium"
+    elif mars_house in {2, 12}:
+        mangal_severity = "Low"
+    else:
+        mangal_severity = "None"
+
+    mangal_dosha = {
+        "present": mangal_present,
+        "mars_house": mars_house,
+        "severity": mangal_severity,
+        "description": f"Mars is in the {mars_house}{'st' if mars_house==1 else 'nd' if mars_house==2 else 'rd' if mars_house==3 else 'th'} house from Lagna."
+    }
+
+    # ── Kal Sarpa Dosha ───────────────────────────────────────────────────────
+    def sign_idx(sign_str: str) -> int:
+        try:
+            return _SIGNS.index(sign_str)
+        except ValueError:
+            return 0
+
+    rahu_sign_idx = sign_idx(planets.get("Rahu", {}).get("sign", "Aries"))
+    ketu_sign_idx = (rahu_sign_idx + 6) % 12
+
+    # Arc from Rahu clockwise to Ketu (exclusive of Rahu and Ketu signs)
+    arc = set()
+    idx = (rahu_sign_idx + 1) % 12
+    while idx != ketu_sign_idx:
+        arc.add(idx)
+        idx = (idx + 1) % 12
+
+    planet_keys = ["Sun","Moon","Mars","Mercury","Jupiter","Venus","Saturn"]
+    planets_in_arc = [p for p in planet_keys if sign_idx(planets.get(p,{}).get("sign","")) in arc]
+    # Also count Rahu and Ketu sign positions themselves
+    all_in = all(sign_idx(planets.get(p,{}).get("sign","")) in (arc | {rahu_sign_idx}) for p in planet_keys)
+
+    ksd_present = all_in
+    ksd_partial = (not all_in) and len(planets_in_arc) >= 5
+
+    kal_sarpa = {
+        "present": ksd_present,
+        "partial": ksd_partial,
+        "rahu_sign": _SIGNS[rahu_sign_idx],
+        "ketu_sign": _SIGNS[ketu_sign_idx],
+        "type": _KSD_NAMES.get(rahu_sign_idx, "Unknown"),
+    }
+
+    # ── Sade Sati ─────────────────────────────────────────────────────────────
+    try:
+        swe.set_sid_mode(swe.SIDM_LAHIRI)
+        now_jd = swe.julday(*_time.gmtime()[:6])
+        sat_lon = swe.calc_ut(now_jd, swe.SATURN, swe.FLG_SIDEREAL | swe.FLG_SWIEPH)[0][0]
+        current_sat_idx = int(sat_lon / 30) % 12
+    except Exception:
+        current_sat_idx = 0
+
+    natal_moon_sign = planets.get("Moon", {}).get("sign", "Aries")
+    moon_idx = sign_idx(natal_moon_sign)
+
+    before_moon = (moon_idx - 1) % 12
+    after_moon  = (moon_idx + 1) % 12
+
+    if current_sat_idx == moon_idx:
+        ss_active = True; ss_phase = "Peak"
+    elif current_sat_idx == before_moon:
+        ss_active = True; ss_phase = "Rising"
+    elif current_sat_idx == after_moon:
+        ss_active = True; ss_phase = "Setting"
+    else:
+        ss_active = False; ss_phase = "None"
+
+    # Small Panoti: Saturn in 4th or 8th from natal Moon
+    fourth_from_moon = (moon_idx + 3) % 12
+    eighth_from_moon = (moon_idx + 7) % 12
+    if current_sat_idx == eighth_from_moon:
+        small_panoti = True; small_panoti_type = "Ashtam"
+    elif current_sat_idx == fourth_from_moon:
+        small_panoti = True; small_panoti_type = "Ardha"
+    else:
+        small_panoti = False; small_panoti_type = "None"
+
+    sade_sati = {
+        "active": ss_active,
+        "phase": ss_phase,
+        "natal_moon_sign": natal_moon_sign,
+        "current_saturn_sign": _SIGNS[current_sat_idx],
+        "years_remaining": "~2.5 yrs" if ss_active else "Not active",
+        "small_panoti": small_panoti,
+        "small_panoti_type": small_panoti_type,
+    }
+
+    return {
+        "mangal_dosha": mangal_dosha,
+        "kal_sarpa": kal_sarpa,
+        "sade_sati": sade_sati,
+    }
+
+
+# ── Baby Names by Nakshatra ───────────────────────────────────────────────────
+
+_NAKSHATRA_DATA = [
+    ("Ashwini","Aries","Mars",[("Chu","चु"),("Che","चे"),("Cho","चो"),("La","ला")],["Chulbul","Chetan","Chotu","Lata","Lalita","Chaman"]),
+    ("Bharani","Aries","Mars",[("Li","ली"),("Lu","लू"),("Le","ले"),("Lo","लो")],["Lila","Luv","Leela","Lohit","Lokesh","Lola"]),
+    ("Krittika","Aries/Taurus","Sun",[("A","अ"),("I","इ"),("U","उ"),("E","ए")],["Anil","Anita","Isha","Uma","Ekta","Esha"]),
+    ("Rohini","Taurus","Venus",[("O","ओ"),("Va","वा"),("Vi","वि"),("Vu","वु")],["Om","Omkar","Varun","Vijay","Vikas","Vinod"]),
+    ("Mrigashira","Taurus/Gemini","Mars",[("Ve","वे"),("Vo","वो"),("Ka","का"),("Ki","कि")],["Veda","Venu","Karan","Kavya","Kishan","Kiran"]),
+    ("Ardra","Gemini","Rahu",[("Ku","कु"),("Gha","घ"),("Ng","ञ"),("Chha","छ")],["Kumar","Kunal","Ghanshyam","Ghazal","Chhavi","Chhaya"]),
+    ("Punarvasu","Gemini/Cancer","Jupiter",[("Ke","के"),("Ko","को"),("Ha","ह"),("Hi","हि")],["Keval","Kedar","Komal","Harish","Harsha","Hiren"]),
+    ("Pushya","Cancer","Saturn",[("Hu","हु"),("He","हे"),("Ho","हो"),("Da","ड")],["Huma","Hemant","Hema","Homi","Daksh","Dinesh"]),
+    ("Ashlesha","Cancer","Mercury",[("Di","डि"),("Du","डु"),("De","डे"),("Do","डो")],["Divya","Dileep","Durga","Deepa","Devika","Dolly"]),
+    ("Magha","Leo","Ketu",[("Ma","म"),("Mi","मि"),("Mu","मु"),("Me","मे")],["Mahesh","Manish","Mira","Mukesh","Meera","Mohan"]),
+    ("Purva Phalguni","Leo","Venus",[("Mo","मो"),("Ta","ट"),("Ti","टि"),("Tu","टु")],["Mohit","Monika","Tarun","Tina","Tinku","Tej"]),
+    ("Uttara Phalguni","Leo/Virgo","Sun",[("Te","टे"),("To","टो"),("Pa","पा"),("Pi","पि")],["Tej","Toshi","Pavan","Payal","Piyush","Pinky"]),
+    ("Hasta","Virgo","Moon",[("Pu","पु"),("Sha","ष"),("Na","ण"),("Tha","ठ")],["Pushpa","Purvi","Shailesh","Shanta","Natasha","Thakur"]),
+    ("Chitra","Virgo/Libra","Mars",[("Pe","पे"),("Po","पो"),("Ra","र"),("Ri","रि")],["Pena","Pooja","Ravi","Rahul","Rita","Rishi"]),
+    ("Swati","Libra","Rahu",[("Ru","रु"),("Re","रे"),("Ro","रो"),("Ta","त")],["Ruchi","Rupali","Reena","Rohit","Tarun","Tanvi"]),
+    ("Vishakha","Libra/Scorpio","Jupiter",[("Ti","ति"),("Tu","तु"),("Te","ते"),("To","तो")],["Tina","Tinku","Tara","Tejas","Tosha","Tulsi"]),
+    ("Anuradha","Scorpio","Saturn",[("Na","न"),("Ni","नि"),("Nu","नु"),("Ne","ने")],["Naman","Namita","Nikhil","Nisha","Nupur","Neha"]),
+    ("Jyeshtha","Scorpio","Mercury",[("No","नो"),("Ya","य"),("Yi","यि"),("Yu","यु")],["Noor","Yash","Yamini","Yuvan","Yuvraj","Yogesh"]),
+    ("Mula","Sagittarius","Ketu",[("Ye","ये"),("Yo","यो"),("Ba","भ"),("Bi","भि")],["Yesh","Yogi","Bharat","Bhaskar","Bimal","Bijay"]),
+    ("Purva Ashadha","Sagittarius","Venus",[("Bu","भू"),("Dha","ध"),("Bha","भ"),("Dha2","ढ")],["Bhuvan","Dhruv","Dhara","Bhanupratap","Bhavik","Dharini"]),
+    ("Uttara Ashadha","Sagittarius/Capricorn","Sun",[("Be","भे"),("Bo","भो"),("Ja","ज"),("Ji","जि")],["Beena","Bhoomi","Jatin","Jai","Jiya","Jitesh"]),
+    ("Shravana","Capricorn","Moon",[("Khi","खि"),("Khu","खु"),("Khe","खे"),("Kho","खो")],["Khushi","Khusboo","Khilesh","Khyati","Khemraj","Khooshboo"]),
+    ("Dhanishtha","Capricorn/Aquarius","Mars",[("Ga","ग"),("Gi","गि"),("Gu","गु"),("Ge","गे")],["Gagan","Gauri","Girish","Gita","Gulab","Geeta"]),
+    ("Shatabhisha","Aquarius","Rahu",[("Go","गो"),("Sa","स"),("Si","सि"),("Su","सु")],["Gopal","Govind","Sanjay","Savita","Sita","Sunil"]),
+    ("Purva Bhadrapada","Aquarius/Pisces","Jupiter",[("Se","से"),("So","सो"),("Da","द"),("Di","दि")],["Seema","Sonal","Daksh","Dinesh","Divya","Deepak"]),
+    ("Uttara Bhadrapada","Pisces","Saturn",[("Du","दु"),("Tha","थ"),("Jha","झ"),("Da","दा")],["Dushyant","Thakur","Jhanvi","Jharna","Damodar","Daya"]),
+    ("Revati","Pisces","Mercury",[("De","दे"),("Do","दो"),("Cha","च"),("Chi","चि")],["Deval","Devina","Dolly","Chandan","Chitra","Chintan"]),
+]
+
+
+def _nak_to_response(idx: int) -> dict:
+    name, rashi, lord, padas_raw, names = _NAKSHATRA_DATA[idx]
+    return {
+        "index": idx,
+        "nakshatra": name,
+        "rashi": rashi,
+        "rashi_lord": lord,
+        "padas": [{"pada": i+1, "akshar": a, "devanagari": d} for i,(a,d) in enumerate(padas_raw)],
+        "sample_names": names,
+    }
+
+
+@app.get("/api/baby-names")
+def baby_names_all():
+    return [
+        {
+            "index": i,
+            "nakshatra": n[0],
+            "rashi": n[1],
+            "aksharas": ", ".join(a for a,_ in n[3]),
+        }
+        for i, n in enumerate(_NAKSHATRA_DATA)
+    ]
+
+
+@app.get("/api/baby-names/{nakshatra_index}")
+def baby_names_by_nakshatra(nakshatra_index: int):
+    if nakshatra_index < 0 or nakshatra_index > 26:
+        raise HTTPException(status_code=400, detail="nakshatra_index must be 0–26")
+    return _nak_to_response(nakshatra_index)

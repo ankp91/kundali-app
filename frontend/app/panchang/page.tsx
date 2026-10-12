@@ -9,7 +9,7 @@ interface ChogSlot {
   active: boolean; overlaps: string[]
 }
 interface HoraSlot  { hour: number; planet: string; start: string; end: string; active: boolean }
-interface VedicTime { ghati: number; pala: number; vipala: number; is_day: boolean; ghati_duration_min: number; sunrise: string; sunset: string }
+interface VedicTime { ghati: number; pala: number; vipala: number; is_day: boolean; ghati_duration_min: number; night_ghati_duration_min: number; sunrise: string; sunset: string }
 interface Kalam     { start: string; end: string }
 
 interface Panchang {
@@ -25,7 +25,7 @@ interface Panchang {
   hora:       HoraSlot[]
   vedic_time: VedicTime
   kalams: { rahu_kalam: Kalam; yamaganda: Kalam; gulikai: Kalam }
-  auspicious: { brahma_muhurta: Kalam; abhijit_muhurta: Kalam; godhuli_muhurta: Kalam }
+  auspicious: { brahma_muhurta: Kalam; abhijit_muhurta: Kalam | null; godhuli_muhurta: Kalam }
   samvat: { vikram: number; shaka: number }
   ritu: string; ayana: string; dinamana: string; ratrimana: string
 }
@@ -429,7 +429,7 @@ export default function PanchangPage() {
                   <div className="divide-y divide-saffron-700/10">
                     {[
                       { label: p.brahmaMuhurta,  desc: p.brahmaMuhurtaDesc,  ...data.auspicious.brahma_muhurta },
-                      { label: p.abhijitMuhurta, desc: p.abhijitMuhurtaDesc, ...data.auspicious.abhijit_muhurta },
+                      ...(data.auspicious.abhijit_muhurta ? [{ label: p.abhijitMuhurta, desc: p.abhijitMuhurtaDesc, ...data.auspicious.abhijit_muhurta }] : [{ label: p.abhijitMuhurta, desc: 'Not observed on Wednesday (traditional rule)', start: null as string | null, end: null as string | null }]),
                       { label: p.godhuliMuhurta, desc: p.godhuliMuhurtaDesc, ...data.auspicious.godhuli_muhurta },
                     ].map(({ label, desc, start, end }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-2.5">
@@ -437,7 +437,11 @@ export default function PanchangPage() {
                           <span className="text-sm font-medium text-emerald-300">{label}</span>
                           <p className="text-gray-500 text-xs">{desc}</p>
                         </div>
-                        <span className="text-gray-300 text-sm font-mono">{start} – {end}</span>
+                        {start ? (
+                          <span className="text-gray-300 text-sm font-mono">{start} – {end}</span>
+                        ) : (
+                          <span className="text-gray-600 text-xs italic">Not today</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -611,7 +615,7 @@ export default function PanchangPage() {
                 </div>
 
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 text-xs text-gray-400">
-                  <span className="text-saffron-400 font-medium">{p.vedicNotePrefix}</span> {p.vedicNoteText} Today a {p.ghati} is {data.vedic_time.ghati_duration_min} min at your location.
+                  <span className="text-saffron-400 font-medium">{p.vedicNotePrefix}</span> {p.vedicNoteText} Today a {p.ghati} is {(liveVedic?.isDay ?? data.vedic_time.is_day) ? data.vedic_time.ghati_duration_min : data.vedic_time.night_ghati_duration_min} min at your location.
                 </div>
               </div>
             )}

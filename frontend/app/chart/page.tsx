@@ -26,17 +26,25 @@ interface Dasha {
   lord: string; years: number; start: string; end: string; is_current: boolean; antardashas?: Antardasha[]
 }
 
+interface DoshaResult {
+  mangal: { present: boolean; houses: number[]; severity: string; description: string }
+  kal_sarpa: { present: boolean; type: string; rahu_sign: string; ketu_sign: string; description: string }
+  sade_sati: { active: boolean; phase: string; natal_moon_sign: string; current_saturn_sign: string; years_remaining: number; description: string }
+}
+
 export default function ChartPage() {
   const router = useRouter()
   const [chart, setChart] = useState<Record<string, unknown> | null>(null)
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null)
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals' | 'yogas' | 'transits' | 'ashtakavarga' | 'remedies' | 'shadbala' | 'transit-calendar'>('interpret')
+  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals' | 'yogas' | 'transits' | 'ashtakavarga' | 'remedies' | 'shadbala' | 'transit-calendar' | 'doshas'>('interpret')
   const [pdfLoading, setPdfLoading] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const [copyLinkMsg, setCopyLinkMsg] = useState<string | null>(null)
   const [whatsappMsg, setWhatsappMsg] = useState<string | null>(null)
   const [selectedDasha, setSelectedDasha] = useState<number | null>(null)
+  const [doshaData, setDoshaData] = useState<DoshaResult | null>(null)
+  const [doshaLoading, setDoshaLoading] = useState(false)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -140,6 +148,22 @@ export default function ChartPage() {
     setTimeout(() => setWhatsappMsg(null), 2000)
   }
 
+  const checkDoshas = async () => {
+    if (!chart) return
+    setDoshaLoading(true)
+    try {
+      const res = await fetch('/api/dosha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planets: chart.planets, ascendant: chart.ascendant }),
+      })
+      const data = await res.json()
+      setDoshaData(data)
+    } finally {
+      setDoshaLoading(false)
+    }
+  }
+
   const tabs = [
     { key: 'interpret', label: t.chart.interpret },
     { key: 'chat', label: t.chart.chat },
@@ -151,6 +175,7 @@ export default function ChartPage() {
     { key: 'remedies', label: 'Remedies' },
     { key: 'shadbala', label: 'Shadbala' },
     { key: 'transit-calendar', label: 'Transit Cal' },
+    { key: 'doshas', label: t.doshas.title },
   ] as const
 
   return (
@@ -365,6 +390,79 @@ export default function ChartPage() {
 
           {activeTab === 'transit-calendar' && (
             <TransitCalendarPanel chartData={chart} />
+          )}
+
+          {activeTab === 'doshas' && (
+            <div className="space-y-4">
+              <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-4">
+                <p className="text-gray-400 text-sm mb-4">{t.doshas.description}</p>
+                {!doshaData && (
+                  <button
+                    onClick={checkDoshas}
+                    disabled={doshaLoading}
+                    className="bg-saffron-600 hover:bg-saffron-700 text-white font-medium px-5 py-2 rounded-lg transition disabled:opacity-50"
+                  >
+                    {doshaLoading ? t.doshas.loading : t.doshas.checkBtn}
+                  </button>
+                )}
+              </div>
+
+              {doshaData && (
+                <div className="space-y-4">
+                  <div className={`border rounded-xl p-4 ${doshaData.mangal.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">{t.doshas.mangalDosha}</h3>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.mangal.present ? 'border-red-500 bg-red-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                        {doshaData.mangal.present ? t.doshas.present : t.doshas.absent}
+                      </span>
+                    </div>
+                    {doshaData.mangal.present && (
+                      <p className="text-sm mb-1">{t.doshas.marsHouse}: {doshaData.mangal.houses.join(', ')}</p>
+                    )}
+                    <p className="text-sm mb-1">{t.doshas.severity}: {doshaData.mangal.severity}</p>
+                    <p className="text-gray-400 text-xs">{doshaData.mangal.description}</p>
+                  </div>
+
+                  <div className={`border rounded-xl p-4 ${doshaData.kal_sarpa.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">{t.doshas.kalSarpa}</h3>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.kal_sarpa.present ? 'border-red-500 bg-red-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                        {doshaData.kal_sarpa.present ? t.doshas.present : t.doshas.absent}
+                      </span>
+                    </div>
+                    {doshaData.kal_sarpa.present && (
+                      <p className="text-sm mb-1">{t.doshas.type}: {doshaData.kal_sarpa.type}</p>
+                    )}
+                    <p className="text-gray-400 text-xs">{doshaData.kal_sarpa.description}</p>
+                  </div>
+
+                  <div className={`border rounded-xl p-4 ${doshaData.sade_sati.active ? 'text-orange-400 bg-orange-900/30 border-orange-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold">{t.doshas.sadeSati}</h3>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.sade_sati.active ? 'border-orange-500 bg-orange-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                        {doshaData.sade_sati.active ? t.doshas.active : t.doshas.inactive}
+                      </span>
+                    </div>
+                    {doshaData.sade_sati.active && (
+                      <p className="text-sm mb-1">{t.doshas.phase}: {doshaData.sade_sati.phase}</p>
+                    )}
+                    <p className="text-sm mb-1">{t.doshas.natalMoon}: {doshaData.sade_sati.natal_moon_sign}</p>
+                    <p className="text-sm mb-1">{t.doshas.currentSaturn}: {doshaData.sade_sati.current_saturn_sign}</p>
+                    {doshaData.sade_sati.active && doshaData.sade_sati.years_remaining > 0 && (
+                      <p className="text-sm mb-1">{t.doshas.yearsRemaining}: ~{doshaData.sade_sati.years_remaining}</p>
+                    )}
+                    <p className="text-gray-400 text-xs">{doshaData.sade_sati.description}</p>
+                  </div>
+
+                  <button
+                    onClick={() => setDoshaData(null)}
+                    className="text-saffron-400 hover:text-gold-400 text-sm transition"
+                  >
+                    ↺ Recheck
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
