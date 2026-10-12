@@ -48,14 +48,17 @@ VARA      = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturd
 VARA_HI   = ['रविवार','सोमवार','मंगलवार','बुधवार','गुरुवार','शुक्रवार','शनिवार']
 VARA_LORD = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn']
 
-# 7 Choghadiya in cyclic order
-CHOG_NAMES  = ['Amrit','Kaal','Shubh','Rog','Udveg','Char','Labh']
+# 7 Choghadiya in cyclic order (full Sanskrit names matching Drik Panchang)
+CHOG_NAMES  = ['Amrita','Kala','Shubha','Roga','Udvega','Chara','Labha']
 CHOG_NATURE = {
-    'Amrit':'very_good','Shubh':'good','Labh':'good',
-    'Char':'neutral','Udveg':'bad','Rog':'bad','Kaal':'bad',
+    'Amrita':'very_good','Shubha':'good','Labha':'good',
+    'Chara':'neutral','Udvega':'bad','Roga':'bad','Kala':'bad',
 }
 DAY_CHOG_START   = [4, 0, 3, 6, 2, 5, 1]
-NIGHT_CHOG_START = [2, 5, 0, 1, 3, 4, 6]
+# Night start = first planetary hora of night (hora #13) for each weekday:
+# Sun:Jupiter(Shubha=2) Mon:Venus(Chara=5) Tue:Saturn(Kala=1) Wed:Sun(Udvega=4)
+# Thu:Moon(Amrita=0) Fri:Mars(Roga=3) Sat:Mercury(Labha=6)
+NIGHT_CHOG_START = [2, 5, 1, 4, 0, 3, 6]
 
 HORA_PLANETS   = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars']
 HORA_DAY_START = [0, 3, 6, 2, 5, 1, 4]
@@ -509,7 +512,8 @@ def _choghadiya(jd_start: float, jd_end: float, weekday: int,
     for i in range(8):
         s    = jd_start + i * dur
         e    = jd_start + (i + 1) * dur
-        name = CHOG_NAMES[(start + i) % 7]
+        # Day: forward +1 through Chaldean order; Night: reverse -2 (Drik Panchang standard)
+        name = CHOG_NAMES[(start + i) % 7] if day else CHOG_NAMES[(start - 2 * i) % 7]
         overlaps = []
         if kalams and day:
             for kname, k in kalams.items():
@@ -613,7 +617,7 @@ _GOOD_NAK = {
 _BAD_YOGA = {0, 5, 8, 9, 13, 16, 18, 26}  # Vishkambha,Atiganda,Shula,Ganda,Vajra,Vyatipata,Parigha,Vaidhriti
 
 # Good choghadiya for any activity
-_GOOD_CHOG = {"Amrit", "Shubh", "Labh"}
+_GOOD_CHOG = {"Amrita", "Shubha", "Labha"}
 
 
 def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | None:
