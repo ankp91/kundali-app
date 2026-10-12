@@ -58,7 +58,7 @@ export async function downloadKundaliPDF(chartData: Record<string, unknown>) {
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(18)
   pdf.setTextColor(...GOLD)
-  pdf.text('Kundali Chart', W / 2, 20, { align: 'center' })
+  pdf.text('Aadya — Kundali Chart', W / 2, 20, { align: 'center' })
 
   const name = (chartData.name as string) || 'Unknown'
   pdf.setFontSize(13)

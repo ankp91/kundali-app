@@ -62,7 +62,7 @@ function HomeContent() {
     <div className="max-w-4xl mx-auto px-4 pt-16 pb-24">
       <div className="text-center mb-16">
         <div className="text-6xl mb-4">🔱</div>
-        <h1 className="text-4xl md:text-5xl font-bold text-gold-400 mb-4">Kundali</h1>
+        <h1 className="text-4xl md:text-5xl font-bold text-gold-400 mb-4">Aadya</h1>
         <p className="text-saffron-400 text-lg mb-2">{t.home.subtitle}</p>
         <p className="text-gray-400 max-w-lg mx-auto">{t.home.desc}</p>
       </div>

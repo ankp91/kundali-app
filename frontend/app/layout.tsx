@@ -4,8 +4,8 @@ import { LanguageProvider } from '@/components/LanguageProvider'
 import NavBar from '@/components/NavBar'
 
 export const metadata: Metadata = {
-  title: 'Kundali — Vedic Birth Chart',
-  description: 'Generate, read and learn your Vedic astrology birth chart',
+  title: 'Aadya — Vedic Birth Chart',
+  description: 'Aadya: Generate, read and learn your Vedic astrology birth chart',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
