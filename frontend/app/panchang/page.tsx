@@ -161,6 +161,12 @@ export default function PanchangPage() {
     return () => clearInterval(timer)
   }, [data, location])
 
+  useEffect(() => {
+    if (activeTab === 'calendar' && location && calData.length === 0) {
+      fetchCalendar(location, calYear, calMonth)
+    }
+  }, [activeTab, location])
+
   const searchLocation = async () => {
     if (!query.trim()) return
     setGeoLoading(true); setGeoError('')
