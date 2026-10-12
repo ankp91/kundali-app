@@ -121,6 +121,8 @@ export default function PanchangPage() {
   const [calData, setCalData] = useState<CalDay[]>([])
   const [calLoading, setCalLoading] = useState(false)
   const [selectedDay, setSelectedDay] = useState<CalDay | null>(null)
+  const [selectedDayFull, setSelectedDayFull] = useState<Record<string, unknown> | null>(null)
+  const [dayDetailLoading, setDayDetailLoading] = useState(false)
 
   // Muhurta state
   const [muhurtaActivity, setMuhurtaActivity] = useState('business')
@@ -166,6 +168,17 @@ export default function PanchangPage() {
       fetchCalendar(location, calYear, calMonth)
     }
   }, [activeTab, location])
+
+  useEffect(() => {
+    if (!selectedDay || !location) { setSelectedDayFull(null); return }
+    setDayDetailLoading(true)
+    const params = new URLSearchParams({ date: selectedDay.date, lat: String(location.lat), lon: String(location.lon), tz: location.tz })
+    fetch(`/api/panchang?${params}`)
+      .then(r => r.json())
+      .then(setSelectedDayFull)
+      .catch(() => setSelectedDayFull(null))
+      .finally(() => setDayDetailLoading(false))
+  }, [selectedDay])
 
   const searchLocation = async () => {
     if (!query.trim()) return
@@ -673,46 +686,133 @@ export default function PanchangPage() {
                       </div>
 
                       {/* Day detail panel */}
-                      {selectedDay && (
+                      {selectedDay && (() => {
+                        const f = selectedDayFull
+                        const tithi    = f ? (f.tithi    as Record<string,unknown>) : null
+                        const nak      = f ? (f.nakshatra as Record<string,unknown>) : null
+                        const yoga     = f ? (f.yoga     as Record<string,unknown>) : null
+                        const karana   = f ? (f.karana   as Record<string,unknown>) : null
+                        const samvat   = f ? (f.samvat   as Record<string,unknown>) : null
+                        const kalams   = f ? (f.kalams   as Record<string,Record<string,string>>) : null
+                        const ausp     = f ? (f.auspicious as Record<string,Record<string,string>>) : null
+                        const vara     = f ? (f.vara     as Record<string,string>) : null
+                        return (
                         <div className="mt-4 bg-deepblue-950 border border-gold-400/30 rounded-xl p-4 space-y-3">
+                          {/* Header */}
                           <div className="flex items-center justify-between">
-                            <h3 className="text-gold-400 font-bold">
+                            <h3 className="text-gold-400 font-bold text-sm">
                               {new Date(selectedDay.date + 'T12:00:00').toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                             </h3>
                             <button onClick={() => setSelectedDay(null)} className="text-gray-500 hover:text-gray-300 text-lg leading-none">✕</button>
                           </div>
 
+                          {dayDetailLoading && <div className="text-saffron-400 text-xs animate-pulse">Loading full details…</div>}
+
+                          {/* Festival */}
                           {selectedDay.festival && (
                             <div className="bg-gold-400/10 border border-gold-400/30 rounded-lg px-3 py-2">
                               <span className="text-gold-400 text-sm font-medium">🎉 {selectedDay.festival}</span>
                             </div>
                           )}
 
-                          <div className="grid grid-cols-2 gap-2">
+                          {/* Sun / Moon times */}
+                          <div className="grid grid-cols-3 gap-2">
                             {[
-                              { label: 'Masa',       value: selectedDay.masa || '—' },
-                              { label: 'Tithi',      value: `${selectedDay.paksha} ${selectedDay.tithi} (${selectedDay.tithi_num})` },
-                              { label: 'Nakshatra',  value: `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
-                              { label: 'Yoga',       value: selectedDay.yoga },
-                              { label: 'Vara',       value: selectedDay.vara || selectedDay.day_of_week },
-                              { label: 'Sunrise',    value: selectedDay.sunrise },
-                              { label: 'Rahu Kalam', value: `${selectedDay.rahu_start} – ${selectedDay.rahu_end}` },
-                            ].map(({ label, value }) => (
-                              <div key={label} className="bg-deepblue-900/60 rounded-lg px-3 py-2">
-                                <div className="text-saffron-400/60 text-xs">{label}</div>
-                                <div className="text-gray-200 font-medium text-xs mt-0.5">{value}</div>
+                              { icon: '🌅', label: 'Sunrise',  value: (f?.sunrise as string) || selectedDay.sunrise },
+                              { icon: '🌇', label: 'Sunset',   value: (f?.sunset  as string) || '—' },
+                              { icon: '🌕', label: 'Moonrise', value: (f?.moonrise as string) || '—' },
+                            ].map(({ icon, label, value }) => (
+                              <div key={label} className="bg-deepblue-900/60 rounded-lg px-2 py-2 text-center">
+                                <div className="text-lg">{icon}</div>
+                                <div className="text-saffron-400/60 text-[10px]">{label}</div>
+                                <div className="text-gray-200 text-xs font-medium mt-0.5">{value}</div>
                               </div>
                             ))}
                           </div>
 
+                          {/* Samvat */}
+                          {samvat && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-deepblue-900/60 rounded-lg px-3 py-2">
+                                <div className="text-saffron-400/60 text-[10px]">Vikram Samvat</div>
+                                <div className="text-gray-200 text-xs font-medium mt-0.5">{samvat.vikram as number}</div>
+                              </div>
+                              <div className="bg-deepblue-900/60 rounded-lg px-3 py-2">
+                                <div className="text-saffron-400/60 text-[10px]">Shaka Samvat</div>
+                                <div className="text-gray-200 text-xs font-medium mt-0.5">{samvat.shaka as number}</div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Panchang details */}
+                          <div className="space-y-1.5">
+                            {[
+                              { label: 'Masa (Purnimanta)', value: selectedDay.masa || '—' },
+                              { label: 'Paksha',  value: selectedDay.paksha },
+                              { label: 'Vara',    value: vara ? `${vara.name} (${vara.lord})` : (selectedDay.vara || selectedDay.day_of_week) },
+                              { label: 'Tithi',   value: tithi ? `${tithi.paksha} ${tithi.name} · upto ${tithi.end_time}` : `${selectedDay.paksha} ${selectedDay.tithi}` },
+                              { label: 'Nakshatra', value: nak ? `${nak.name} (${nak.name_hi}) Pada ${nak.pada} · upto ${nak.end_time}` : `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
+                              { label: 'Yoga',    value: yoga ? `${yoga.name} · upto ${(f?.vedic_time as Record<string,unknown> | null)?.ghati ?? ''}` : selectedDay.yoga },
+                              { label: 'Karana',  value: karana ? (karana.name as string) : '—' },
+                              { label: 'Ritu',    value: (f?.ritu as string) || '—' },
+                              { label: 'Ayana',   value: (f?.ayana as string) || '—' },
+                            ].map(({ label, value }) => (
+                              <div key={label} className="flex items-baseline justify-between py-1 border-b border-saffron-700/10">
+                                <span className="text-saffron-400/70 text-xs w-32 shrink-0">{label}</span>
+                                <span className="text-gray-200 text-xs text-right">{String(value)}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Kalams */}
+                          {kalams && (
+                            <div>
+                              <div className="text-saffron-400/60 text-[10px] uppercase tracking-wide mb-1.5">Inauspicious Periods</div>
+                              <div className="grid grid-cols-1 gap-1">
+                                {[
+                                  { label: 'Rahu Kalam',  start: kalams.rahu_kalam?.start,  end: kalams.rahu_kalam?.end },
+                                  { label: 'Yamaganda',   start: kalams.yamaganda?.start,   end: kalams.yamaganda?.end },
+                                  { label: 'Gulikai',     start: kalams.gulikai?.start,     end: kalams.gulikai?.end },
+                                ].map(({ label, start, end }) => (
+                                  <div key={label} className="flex justify-between bg-red-900/10 border border-red-700/20 rounded px-2 py-1">
+                                    <span className="text-red-300/80 text-xs">{label}</span>
+                                    <span className="text-gray-300 text-xs">{start} – {end}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Auspicious timings */}
+                          {ausp && (
+                            <div>
+                              <div className="text-saffron-400/60 text-[10px] uppercase tracking-wide mb-1.5">Auspicious Timings</div>
+                              <div className="grid grid-cols-1 gap-1">
+                                {[
+                                  { label: 'Brahma Muhurta', start: ausp.brahma_muhurta?.start,  end: ausp.brahma_muhurta?.end },
+                                  { label: 'Abhijit',        start: ausp.abhijit_muhurta?.start, end: ausp.abhijit_muhurta?.end },
+                                  { label: 'Godhuli',        start: ausp.godhuli_muhurta?.start, end: ausp.godhuli_muhurta?.end },
+                                ].map(({ label, start, end }) => (
+                                  <div key={label} className="flex justify-between bg-green-900/10 border border-green-700/20 rounded px-2 py-1">
+                                    <span className="text-green-300/80 text-xs">{label}</span>
+                                    <span className="text-gray-300 text-xs">{start} – {end}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tags */}
                           <div className="flex gap-2 flex-wrap">
-                            {selectedDay.is_auspicious && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-full">✓ Auspicious Day</span>}
+                            {selectedDay.is_auspicious && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-full">✓ Auspicious</span>}
                             {selectedDay.tithi_num === 11 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">🙏 Ekadashi</span>}
+                            {selectedDay.tithi_num === 26 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">🙏 Ekadashi</span>}
                             {selectedDay.tithi_num === 15 && <span className="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-1 rounded-full">🌕 Purnima</span>}
                             {selectedDay.tithi_num === 30 && <span className="text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30 px-2 py-1 rounded-full">🌑 Amavasya</span>}
                           </div>
                         </div>
-                      )}
+                        )
+                      })()}
                     </>
                   )}
                   {!location && <p className="text-gray-500 text-sm text-center py-4">Set a location first to view monthly panchang.</p>}
