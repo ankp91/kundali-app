@@ -551,3 +551,102 @@ def baby_names_by_nakshatra(nakshatra_index: int):
     if nakshatra_index < 0 or nakshatra_index > 26:
         raise HTTPException(status_code=400, detail="nakshatra_index must be 0–26")
     return _nak_to_response(nakshatra_index)
+
+
+# ── Garbhadhana Conception Window ─────────────────────────────────────────────
+
+# Nakshatra classifications for Garbhadhana (Muhurta Chintamani + Dharmasindhu)
+_GARB_NAK_BEST = {"Rohini","Mrigashira","Uttara Phalguni","Uttara Ashadha","Uttara Bhadrapada","Revati","Anuradha","Hasta","Swati"}
+_GARB_NAK_GOOD = {"Ashwini","Punarvasu","Shravana","Dhanishtha","Chitra","Vishakha"}
+_GARB_NAK_AVOID = {"Bharani","Krittika","Ardra","Pushya","Ashlesha","Magha","Purva Phalguni","Jyeshtha","Mula","Purva Ashadha","Purva Bhadrapada","Shatabhisha"}
+
+# Tithis to avoid for Garbhadhana (1-indexed)
+_GARB_TITHI_AVOID = {1, 4, 6, 8, 9, 12, 14, 15, 30}
+
+# Days (weekday 0=Sun..6=Sat) to avoid
+_GARB_VARA_AVOID = {2, 6}  # Tuesday, Saturday
+
+class ConceptionWindowRequest(BaseModel):
+    menses_start: str  # YYYY-MM-DD
+    lat: float = 28.6139
+    lon: float = 77.2090
+    tz: str = "Asia/Kolkata"
+
+@app.post("/api/garbhadhana-window")
+def garbhadhana_window(req: ConceptionWindowRequest):
+    from panchang import calculate_panchang, _weekday, _local_to_jd, _now_jd
+    import swisseph as swe
+    from datetime import datetime, timedelta
+    import pytz
+
+    try:
+        base_date = datetime.strptime(req.menses_start, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="menses_start must be YYYY-MM-DD")
+
+    results = []
+    for night_num in range(4, 17):  # nights 4–16
+        # Night N = evening of day (N-1) after menses start
+        night_date = base_date + timedelta(days=night_num - 1)
+        date_str = night_date.strftime("%Y-%m-%d")
+
+        try:
+            pdata = calculate_panchang(date_str, req.lat, req.lon, req.tz)
+        except Exception:
+            continue
+
+        tithi_num = pdata.get("tithi", {}).get("number", 0)
+        nakshatra_name = pdata.get("nakshatra", {}).get("name", "")
+        weekday = pdata.get("vara", {}).get("number", 0)  # 0=Sun..6=Sat
+
+        # Night classification
+        is_even = (night_num % 2 == 0)
+        gender_hint = "Putra (Son)" if is_even else "Kanya (Daughter)"
+
+        # Nakshatra rating
+        if nakshatra_name in _GARB_NAK_BEST:
+            nak_rating = "best"
+        elif nakshatra_name in _GARB_NAK_GOOD:
+            nak_rating = "good"
+        elif nakshatra_name in _GARB_NAK_AVOID:
+            nak_rating = "avoid"
+        else:
+            nak_rating = "acceptable"
+
+        # Tithi rating
+        tithi_avoid = tithi_num in _GARB_TITHI_AVOID
+        vara_avoid = weekday in _GARB_VARA_AVOID
+
+        # Kaal Ratri for this night — from choghadiya overlaps
+        choghadiya = pdata.get("choghadiya", {}).get("night", [])
+        kaal_ratri_slots = [s for s in choghadiya if "kaal_ratri" in (s.get("overlaps") or [])]
+
+        # Overall rating
+        if nak_rating == "avoid" or tithi_avoid or vara_avoid:
+            overall = "avoid"
+        elif nak_rating == "best" and not tithi_avoid and not vara_avoid:
+            overall = "best"
+        elif nak_rating in ("good", "acceptable") and not tithi_avoid and not vara_avoid:
+            overall = "good"
+        else:
+            overall = "acceptable"
+
+        results.append({
+            "night_num": night_num,
+            "date": date_str,
+            "gender_hint": gender_hint,
+            "is_even": is_even,
+            "nakshatra": nakshatra_name,
+            "nakshatra_rating": nak_rating,
+            "tithi": pdata.get("tithi", {}).get("name", ""),
+            "tithi_num": tithi_num,
+            "tithi_avoid": tithi_avoid,
+            "vara": pdata.get("vara", {}).get("name", ""),
+            "vara_avoid": vara_avoid,
+            "overall": overall,
+            "kaal_ratri_slots": kaal_ratri_slots,
+            "sunrise": pdata.get("sunrise", ""),
+            "sunset": pdata.get("sunset", ""),
+        })
+
+    return {"nights": results, "menses_start": req.menses_start}

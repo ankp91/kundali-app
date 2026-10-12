@@ -27,9 +27,9 @@ interface Dasha {
 }
 
 interface DoshaResult {
-  mangal: { present: boolean; houses: number[]; severity: string; description: string }
-  kal_sarpa: { present: boolean; type: string; rahu_sign: string; ketu_sign: string; description: string }
-  sade_sati: { active: boolean; phase: string; natal_moon_sign: string; current_saturn_sign: string; years_remaining: number; description: string }
+  mangal_dosha: { present: boolean; mars_house: number; severity: string; description: string }
+  kal_sarpa: { present: boolean; partial: boolean; type: string; rahu_sign: string; ketu_sign: string }
+  sade_sati: { active: boolean; phase: string; natal_moon_sign: string; current_saturn_sign: string; years_remaining: string; small_panoti: boolean; small_panoti_type: string }
 }
 
 export default function ChartPage() {
@@ -409,31 +409,29 @@ export default function ChartPage() {
 
               {doshaData && (
                 <div className="space-y-4">
-                  <div className={`border rounded-xl p-4 ${doshaData.mangal.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                  <div className={`border rounded-xl p-4 ${doshaData.mangal_dosha.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold">{t.doshas.mangalDosha}</h3>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.mangal.present ? 'border-red-500 bg-red-900/40' : 'border-green-500 bg-green-900/40'}`}>
-                        {doshaData.mangal.present ? t.doshas.present : t.doshas.absent}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.mangal_dosha.present ? 'border-red-500 bg-red-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                        {doshaData.mangal_dosha.present ? t.doshas.present : t.doshas.absent}
                       </span>
                     </div>
-                    {doshaData.mangal.present && (
-                      <p className="text-sm mb-1">{t.doshas.marsHouse}: {doshaData.mangal.houses.join(', ')}</p>
-                    )}
-                    <p className="text-sm mb-1">{t.doshas.severity}: {doshaData.mangal.severity}</p>
-                    <p className="text-gray-400 text-xs">{doshaData.mangal.description}</p>
+                    <p className="text-sm mb-1">{t.doshas.marsHouse} {doshaData.mangal_dosha.mars_house}</p>
+                    <p className="text-sm mb-1">{t.doshas.severity}: {doshaData.mangal_dosha.severity}</p>
+                    <p className="text-gray-400 text-xs">{doshaData.mangal_dosha.description}</p>
                   </div>
 
-                  <div className={`border rounded-xl p-4 ${doshaData.kal_sarpa.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                  <div className={`border rounded-xl p-4 ${doshaData.kal_sarpa.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : doshaData.kal_sarpa.partial ? 'text-orange-400 bg-orange-900/30 border-orange-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold">{t.doshas.kalSarpa}</h3>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.kal_sarpa.present ? 'border-red-500 bg-red-900/40' : 'border-green-500 bg-green-900/40'}`}>
-                        {doshaData.kal_sarpa.present ? t.doshas.present : t.doshas.absent}
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.kal_sarpa.present ? 'border-red-500 bg-red-900/40' : doshaData.kal_sarpa.partial ? 'border-orange-500 bg-orange-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                        {doshaData.kal_sarpa.present ? t.doshas.present : doshaData.kal_sarpa.partial ? t.doshas.partial : t.doshas.absent}
                       </span>
                     </div>
-                    {doshaData.kal_sarpa.present && (
+                    {(doshaData.kal_sarpa.present || doshaData.kal_sarpa.partial) && (
                       <p className="text-sm mb-1">{t.doshas.type}: {doshaData.kal_sarpa.type}</p>
                     )}
-                    <p className="text-gray-400 text-xs">{doshaData.kal_sarpa.description}</p>
+                    <p className="text-sm mb-1">Rahu: {doshaData.kal_sarpa.rahu_sign} · Ketu: {doshaData.kal_sarpa.ketu_sign}</p>
                   </div>
 
                   <div className={`border rounded-xl p-4 ${doshaData.sade_sati.active ? 'text-orange-400 bg-orange-900/30 border-orange-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
@@ -444,14 +442,16 @@ export default function ChartPage() {
                       </span>
                     </div>
                     {doshaData.sade_sati.active && (
-                      <p className="text-sm mb-1">{t.doshas.phase}: {doshaData.sade_sati.phase}</p>
+                      <>
+                        <p className="text-sm mb-1">{t.doshas.phase}: {doshaData.sade_sati.phase}</p>
+                        <p className="text-sm mb-1">{t.doshas.yearsRemaining}: {doshaData.sade_sati.years_remaining}</p>
+                      </>
                     )}
                     <p className="text-sm mb-1">{t.doshas.natalMoon}: {doshaData.sade_sati.natal_moon_sign}</p>
                     <p className="text-sm mb-1">{t.doshas.currentSaturn}: {doshaData.sade_sati.current_saturn_sign}</p>
-                    {doshaData.sade_sati.active && doshaData.sade_sati.years_remaining > 0 && (
-                      <p className="text-sm mb-1">{t.doshas.yearsRemaining}: ~{doshaData.sade_sati.years_remaining}</p>
+                    {doshaData.sade_sati.small_panoti && (
+                      <p className="text-sm mt-1 text-yellow-400">⚠ {doshaData.sade_sati.small_panoti_type} Shani (Small Panoti)</p>
                     )}
-                    <p className="text-gray-400 text-xs">{doshaData.sade_sati.description}</p>
                   </div>
 
                   <button

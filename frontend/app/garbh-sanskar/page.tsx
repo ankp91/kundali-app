@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import axios from 'axios'
 import { useLanguage } from '@/components/LanguageProvider'
 
 const MONTHS = [
@@ -45,10 +46,88 @@ const BEST_NAKS = ['Rohini', 'Mrigashira', 'Uttara Phalguni', 'Uttara Ashadha', 
 const GOOD_NAKS = ['Ashwini', 'Punarvasu', 'Shravana', 'Dhanishtha (Padas 1–2)', 'Chitra (Padas 1–2)', 'Vishakha (Padas 1–3)']
 const AVOID_NAKS = ['Bharani', 'Krittika', 'Ardra', 'Pushya', 'Ashlesha', 'Magha', 'Purva Phalguni', 'Jyeshtha', 'Mula', 'Purva Ashadha', 'Purva Bhadrapada', 'Shatabhisha']
 
+interface NightResult {
+  night_num: number
+  date: string
+  gender_hint: string
+  is_even: boolean
+  nakshatra: string
+  nakshatra_rating: 'best' | 'good' | 'acceptable' | 'avoid'
+  tithi: string
+  tithi_num: number
+  tithi_avoid: boolean
+  vara: string
+  vara_avoid: boolean
+  overall: 'best' | 'good' | 'acceptable' | 'avoid'
+  kaal_ratri_slots: Array<{ start: string; end: string }>
+  sunrise: string
+  sunset: string
+}
+
+const RATING_STYLE: Record<string, string> = {
+  best:       'border-yellow-600/50 bg-yellow-900/15',
+  good:       'border-green-600/40 bg-green-900/10',
+  acceptable: 'border-gray-600/40 bg-gray-900/10',
+  avoid:      'border-red-600/40 bg-red-900/15 opacity-70',
+}
+
+const RATING_LABEL_KEY: Record<string, 'ratingBest' | 'ratingGood' | 'ratingOk' | 'ratingAvoid'> = {
+  best: 'ratingBest', good: 'ratingGood', acceptable: 'ratingOk', avoid: 'ratingAvoid',
+}
+
+const NAK_COLOR: Record<string, string> = {
+  best:       'text-yellow-300 bg-yellow-900/30 border-yellow-700/30',
+  good:       'text-green-300 bg-green-900/30 border-green-700/30',
+  acceptable: 'text-gray-300 bg-gray-900/30 border-gray-700/30',
+  avoid:      'text-red-300 bg-red-900/30 border-red-700/30',
+}
+
 export default function GarbhSanskarPage() {
   const { t, lang } = useLanguage()
   const p = t.garbhSanskar
-  const [tab, setTab] = useState<'months' | 'today' | 'garbhadhana'>('months')
+  const [tab, setTab] = useState<'months' | 'today' | 'garbhadhana' | 'window'>('months')
+
+  // Conception window state
+  const [mensesDate, setMensesDate] = useState('')
+  const [locationQuery, setLocationQuery] = useState('')
+  const [geoResult, setGeoResult] = useState<{ lat: number; lon: number; tz: string; name: string } | null>(null)
+  const [windowResults, setWindowResults] = useState<NightResult[] | null>(null)
+  const [calcLoading, setCalcLoading] = useState(false)
+  const [calcError, setCalcError] = useState('')
+  const [geoLoading, setGeoLoading] = useState(false)
+
+  const searchLocation = async () => {
+    if (!locationQuery.trim()) return
+    setGeoLoading(true)
+    try {
+      const { data } = await axios.get(`/api/geocode?q=${encodeURIComponent(locationQuery)}`)
+      setGeoResult({ lat: data.lat, lon: data.lon, tz: data.tz, name: data.name })
+    } catch {
+      setCalcError('Location not found. Try "Delhi, India".')
+    } finally {
+      setGeoLoading(false)
+    }
+  }
+
+  const calculateWindow = async () => {
+    if (!mensesDate) { setCalcError('Enter menses start date.'); return }
+    setCalcLoading(true)
+    setCalcError('')
+    try {
+      const payload = {
+        menses_start: mensesDate,
+        lat: geoResult?.lat ?? 28.6139,
+        lon: geoResult?.lon ?? 77.2090,
+        tz: geoResult?.tz ?? 'Asia/Kolkata',
+      }
+      const { data } = await axios.post('/api/garbhadhana-window', payload)
+      setWindowResults(data.nights)
+    } catch {
+      setCalcError('Calculation failed. Check your inputs.')
+    } finally {
+      setCalcLoading(false)
+    }
+  }
 
   const tabStyle = (key: string) =>
     tab === key
@@ -64,8 +143,9 @@ export default function GarbhSanskarPage() {
 
       <div className="flex gap-2 mb-6 flex-wrap">
         <button onClick={() => setTab('months')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tabStyle('months')}`}>{p.tab1}</button>
-        <button onClick={() => setTab('today')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tabStyle('today')}`}>{p.tab2}</button>
         <button onClick={() => setTab('garbhadhana')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tabStyle('garbhadhana')}`}>{p.tab3}</button>
+        <button onClick={() => setTab('window')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tabStyle('window')}`}>{p.tab4}</button>
+        <button onClick={() => setTab('today')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tabStyle('today')}`}>{p.tab2}</button>
       </div>
 
       {tab === 'months' && (
@@ -104,6 +184,122 @@ export default function GarbhSanskarPage() {
           <a href="/panchang" className="inline-block mt-4 text-saffron-400 hover:text-gold-400 text-sm transition">
             → Open Daily Panchang
           </a>
+        </div>
+      )}
+
+      {tab === 'window' && (
+        <div className="space-y-5">
+          <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-5">
+            <h2 className="text-gold-400 font-bold text-lg mb-1">{p.calcTitle}</h2>
+            <p className="text-gray-400 text-sm mb-5">{p.calcSubtitle}</p>
+
+            <div className="grid md:grid-cols-2 gap-4 mb-4">
+              <div>
+                <label className="text-saffron-400 text-xs font-medium block mb-1">{p.mensesLabel}</label>
+                <input
+                  type="date"
+                  value={mensesDate}
+                  onChange={e => setMensesDate(e.target.value)}
+                  className="w-full bg-[#060d2e] border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400"
+                />
+              </div>
+              <div>
+                <label className="text-saffron-400 text-xs font-medium block mb-1">{p.locationLabel}</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={locationQuery}
+                    onChange={e => setLocationQuery(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && searchLocation()}
+                    placeholder={p.locationPlaceholder}
+                    className="flex-1 bg-[#060d2e] border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400 placeholder-gray-600"
+                  />
+                  <button
+                    onClick={searchLocation}
+                    disabled={geoLoading}
+                    className="px-3 py-2 bg-deepblue-900 border border-saffron-700/40 text-saffron-400 rounded-lg text-sm hover:border-gold-400 transition disabled:opacity-50"
+                  >
+                    {geoLoading ? '…' : 'Set'}
+                  </button>
+                </div>
+                {geoResult && <p className="text-green-400 text-xs mt-1">✓ {geoResult.name}</p>}
+              </div>
+            </div>
+
+            {calcError && <p className="text-red-400 text-sm mb-3">{calcError}</p>}
+
+            <button
+              onClick={calculateWindow}
+              disabled={calcLoading || !mensesDate}
+              className="bg-saffron-600 hover:bg-saffron-700 text-white font-medium px-6 py-2 rounded-lg transition disabled:opacity-50"
+            >
+              {calcLoading ? p.calculating : p.calcBtn}
+            </button>
+          </div>
+
+          {windowResults && (
+            <div className="space-y-3">
+              <p className="text-gray-500 text-xs italic">{p.calcNote}</p>
+              {windowResults.map(night => (
+                <div key={night.night_num} className={`border rounded-xl p-4 ${RATING_STYLE[night.overall]}`}>
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-3">
+                      <div className="flex-shrink-0 text-center">
+                        <div className="text-gold-400 font-bold text-lg leading-none">{night.night_num}</div>
+                        <div className="text-gray-500 text-xs">{p.nightLabel}</div>
+                      </div>
+                      <div>
+                        <div className="text-gray-300 text-sm font-medium">{night.date}</div>
+                        <div className={`text-xs font-medium mt-0.5 ${night.is_even ? 'text-blue-300' : 'text-pink-300'}`}>
+                          {night.gender_hint}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${NAK_COLOR[night.nakshatra_rating]}`}>
+                        {night.nakshatra}
+                      </span>
+                      <span className="text-gray-400 text-xs">{night.tithi}</span>
+                      <span className="text-gray-500 text-xs">{night.vara}</span>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
+                        night.overall === 'best' ? 'text-yellow-300 border-yellow-600/50 bg-yellow-900/20' :
+                        night.overall === 'good' ? 'text-green-300 border-green-600/50 bg-green-900/20' :
+                        night.overall === 'avoid' ? 'text-red-300 border-red-600/50 bg-red-900/20' :
+                        'text-gray-300 border-gray-600/50 bg-gray-900/20'
+                      }`}>
+                        {p[RATING_LABEL_KEY[night.overall]]}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(night.vara_avoid || night.tithi_avoid) && (
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {night.vara_avoid && <span className="text-red-400 text-xs">⚠ {p.varaAvoidNote}</span>}
+                      {night.tithi_avoid && <span className="text-red-400 text-xs">⚠ {p.tithiAvoidNote}</span>}
+                    </div>
+                  )}
+
+                  {night.kaal_ratri_slots.length > 0 && (
+                    <div className="mt-2 bg-rose-900/20 border border-rose-700/30 rounded-lg px-3 py-1.5">
+                      <span className="text-rose-400 text-xs font-medium">{p.kaalRatriWarn}: </span>
+                      {night.kaal_ratri_slots.map((s, i) => (
+                        <span key={i} className="text-rose-300 text-xs">{s.start} – {s.end}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              <div className="flex gap-3 flex-wrap mt-2 text-xs text-gray-500">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500 inline-block"></span> Best</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Good</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-500 inline-block"></span> Acceptable</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Avoid</span>
+                <span className="text-blue-300">Blue = Son · Pink = Daughter</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
