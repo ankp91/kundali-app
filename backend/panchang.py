@@ -175,24 +175,35 @@ def _get_masa(jd: float) -> str:
     sun_sidereal = (sun_lon - ayanamsha) % 360
     sun_sign     = int(sun_sidereal // 30)
     moon_sun_diff = (moon_lon - sun_lon) % 360
-    if moon_sun_diff < 6:
-        # Near Amavasya — last day of the current month
+    tithi_i       = int(moon_sun_diff / 12)  # 0-29
+
+    # Tithi 29 = Amavasya — last day of the current (ending) month
+    if tithi_i == 29:
         return _MASA_NAMES[sun_sign]
-    elif moon_sun_diff < 180:
-        # Shukla Paksha — new month has begun after the Amavasya
-        return _MASA_NAMES[(sun_sign + 1) % 12]
-    else:
-        # Krishna Paksha — second half of the current month
-        return _MASA_NAMES[sun_sign]
+
+    # For all other days, find the Sun's sidereal sign at the LAST Amavasya.
+    # Moon-Sun angle increases ~12.2°/day, so last Amavasya was approx:
+    days_since_av = moon_sun_diff / 12.2
+    jd_av         = jd - days_since_av
+    sun_at_av     = swe.calc_ut(jd_av, swe.SUN, swe.FLG_SWIEPH)[0][0]
+    ay_av         = swe.get_ayanamsa_ut(jd_av)
+    sign_at_av    = int(((sun_at_av - ay_av) % 360) / 30)
+    # Current month = the one that started AFTER that Amavasya
+    return _MASA_NAMES[(sign_at_av + 1) % 12]
 
 
 def _get_festival(masa: str, paksha: str, tithi_num: int) -> str:
-    fest = _FESTIVALS.get((masa, paksha, tithi_num), '')
-    if tithi_num == 11:
+    # tithi_num is 1-30 overall; _FESTIVALS keys use 1-15 within each paksha
+    lookup_num = (tithi_num - 15) if tithi_num > 15 else tithi_num
+    fest = _FESTIVALS.get((masa, paksha, lookup_num), '')
+    # Ekadashi: Shukla 11 = tithi 11, Krishna 11 = tithi 26
+    if tithi_num in (11, 26):
         fest = (fest + ' · Ekadashi') if fest else 'Ekadashi'
-    if tithi_num == 15 and paksha == 'Shukla' and 'Purnima' not in fest:
+    # Purnima: Shukla 15 = tithi 15
+    if tithi_num == 15 and 'Purnima' not in fest:
         fest = (fest + ' · Purnima') if fest else 'Purnima'
-    if tithi_num == 15 and paksha == 'Krishna' and 'Amavasya' not in fest:
+    # Amavasya: Krishna 15 = tithi 30
+    if tithi_num == 30 and 'Amavasya' not in fest:
         fest = (fest + ' · Amavasya') if fest else 'Amavasya'
     return fest
 
