@@ -169,6 +169,26 @@ _FESTIVALS = {
 }
 
 
+def _find_amavasya(jd_guess: float) -> float:
+    """Newton-Raphson refinement to find the exact Amavasya nearest jd_guess.
+
+    The synodic month varies from ~29.27 to ~29.83 days, so fixed offsets
+    like 29.53 can miss the true conjunction by hours. 8 iterations converge
+    to < 0.1 second accuracy.
+    """
+    jd = jd_guess
+    for _ in range(8):
+        s = swe.calc_ut(jd, swe.SUN,  swe.FLG_SWIEPH)[0][0]
+        m = swe.calc_ut(jd, swe.MOON, swe.FLG_SWIEPH)[0][0]
+        # Signed residual: positive = moon ahead of sun (past conjunction)
+        residual = (m - s + 180) % 360 - 180
+        correction = residual / 12.2  # ~12.2°/day differential speed
+        jd -= correction
+        if abs(correction) < 1e-6:  # < 0.1 second
+            break
+    return jd
+
+
 def _get_masa(jd: float) -> str:
     sun_lon      = swe.calc_ut(jd, swe.SUN,  swe.FLG_SWIEPH)[0][0]
     moon_lon     = swe.calc_ut(jd, swe.MOON, swe.FLG_SWIEPH)[0][0]
@@ -176,20 +196,23 @@ def _get_masa(jd: float) -> str:
     sun_sidereal = (sun_lon - ayanamsha) % 360
     sun_sign     = int(sun_sidereal // 30)
     moon_sun_diff = (moon_lon - sun_lon) % 360
-    tithi_i       = int(moon_sun_diff / 12)  # 0-29
 
-    # Tithi 29 = Amavasya — last day of the current (ending) month
-    if tithi_i == 29:
-        return _MASA_NAMES[sun_sign]
+    # Find the EXACT last Amavasya using Newton-Raphson
+    jd_av      = _find_amavasya(jd - moon_sun_diff / 12.2)
+    sun_at_av  = swe.calc_ut(jd_av, swe.SUN, swe.FLG_SWIEPH)[0][0]
+    ay_av      = swe.get_ayanamsa_ut(jd_av)
+    sign_at_av = int(((sun_at_av - ay_av) % 360) / 30)
 
-    # For all other days, find the Sun's sidereal sign at the LAST Amavasya.
-    # Moon-Sun angle increases ~12.2°/day, so last Amavasya was approx:
-    days_since_av = moon_sun_diff / 12.2
-    jd_av         = jd - days_since_av
-    sun_at_av     = swe.calc_ut(jd_av, swe.SUN, swe.FLG_SWIEPH)[0][0]
-    ay_av         = swe.get_ayanamsa_ut(jd_av)
-    sign_at_av    = int(((sun_at_av - ay_av) % 360) / 30)
-    # Current month = the one that started AFTER that Amavasya
+    # Find the EXACT next Amavasya (use mean synodic month as starting guess only)
+    jd_next_av      = _find_amavasya(jd_av + 29.53)
+    sun_at_next_av  = swe.calc_ut(jd_next_av, swe.SUN, swe.FLG_SWIEPH)[0][0]
+    ay_next_av      = swe.get_ayanamsa_ut(jd_next_av)
+    sign_at_next_av = int(((sun_at_next_av - ay_next_av) % 360) / 30)
+
+    # Adhika Masa: Sun stays in same sign for the entire lunar month
+    if sign_at_av == sign_at_next_av:
+        return 'Adhika ' + _MASA_NAMES[(sign_at_av + 1) % 12]
+
     return _MASA_NAMES[(sign_at_av + 1) % 12]
 
 
