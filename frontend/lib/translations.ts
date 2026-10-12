@@ -51,6 +51,23 @@ export const translations = {
       subtitle: 'Master Vedic astrology — from houses and planets to dashas and yogas',
       back: '← All Lessons', thinking: 'Jyotish Guru is explaining...',
       garbhSanskar: 'Garbh Sanskar',
+      garbhSanskarDesc: 'Charaka Samhita & Ayurvedic tradition — ancient wisdom for nurturing the unborn child',
+      garbhSource: 'Charaka Samhita, Ashtanga Hridayam — Vedic tradition',
+      garbhOpenGuide: 'Open Garbh Sanskar Guide',
+      garbhClassical: `Garbh Sanskar (गर्भ संस्कार) is the ancient Vedic science of educating and nurturing the unborn child. The texts of Charaka Samhita (Sharirasthana Adhyaya) and Ashtanga Hridayam establish that the child's samskaras begin at the moment of Garbhadhana (conception). The mother is the child's first guru.
+
+Through Svadhyaya (sacred study), Sattvic Ahara (pure diet), Mantra Japa, and the right Nakshatra muhurtas, the parents directly shape the Buddhi, Chitta, and Prarabdha karma of the incoming soul. Garbhadhana itself must be performed on an auspicious Nakshatra — Rohini being supreme — on even nights for Putra-kamna.
+
+The Dauhrida (cravings) of the 4th month must be honored as they represent the unborn child's desires. The recitation of Vishnu Sahasranama in months 2–3 and Gayatri Mantra in month 6 are prescribed to develop the child's Sattvic tendencies. In the 8th month, Abhyanga must be stopped as Ojas transfers from mother to child — disrupting this is contraindicated by Charaka.`,
+      garbhModern: `Garbh Sanskar is your baby's first school — and you're the teacher, starting from day zero. Ancient Indian science (yes, backed by Charaka Samhita written 2,500 years ago) says your baby's personality, intelligence, and emotional tendencies are shaped in the womb.
+
+Here's what the research and tradition agree on:
+✓ Your stress hormones reach your baby — so calm yourself with music, mantras, and good food.
+✓ Month 4 is when consciousness enters — this is when your baby becomes truly aware. Honor their cravings.
+✓ Talk to your belly daily. Read out loud. Play classical ragas (Bhairav in the morning, Yaman in the evening).
+✓ The naming ceremony isn't random — your baby's Nakshatra at birth gives them their sound, their vibration. That's their Naam Akshara.
+
+The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of intentional parenting before they're even born.`,
     },
     babyNames: {
       title: 'Baby Names by Nakshatra',
@@ -217,6 +234,23 @@ export const translations = {
       subtitle: 'वैदिक ज्योतिष में महारत — भावों, ग्रहों से लेकर दशा और योगों तक',
       back: '← सभी पाठ', thinking: 'ज्योतिष गुरु समझा रहे हैं...',
       garbhSanskar: 'गर्भ संस्कार',
+      garbhSanskarDesc: 'चरक संहिता और आयुर्वेद की परंपरा से — गर्भस्थ शिशु के लिए प्राचीन वैदिक ज्ञान',
+      garbhSource: 'चरक संहिता, अष्टांग हृदयम् — वैदिक परंपरा',
+      garbhOpenGuide: 'गर्भ संस्कार मार्गदर्शक खोलें',
+      garbhClassical: `गर्भ संस्कार अजन्मे शिशु की शिक्षा और पोषण का प्राचीन वैदिक विज्ञान है। चरक संहिता (शरीरस्थान अध्याय) और अष्टांग हृदयम् के ग्रंथ स्थापित करते हैं कि शिशु के संस्कार गर्भाधान के क्षण से ही प्रारंभ हो जाते हैं। माता ही शिशु की प्रथम गुरु है।
+
+स्वाध्याय (पवित्र अध्ययन), सात्विक आहार, मंत्र जप और उचित नक्षत्र मुहूर्त के माध्यम से माता-पिता आने वाली आत्मा की बुद्धि, चित्त और प्रारब्ध कर्म को सीधे आकार देते हैं। गर्भाधान स्वयं शुभ नक्षत्र पर किया जाना चाहिए — रोहिणी सर्वोत्तम है — पुत्र-कामना के लिए सम रात्रियों पर।
+
+चौथे मास की दौहृदा (इच्छाएं) को पूर्ण करना चाहिए क्योंकि वे अजन्मे शिशु की इच्छाओं का प्रतिनिधित्व करती हैं। द्वितीय-तृतीय मास में विष्णु सहस्रनाम और षष्ठ मास में गायत्री मंत्र का पाठ शिशु की सात्विक प्रवृत्तियों के विकास के लिए निर्धारित है। अष्टम मास में अभ्यंग बंद करना चाहिए क्योंकि ओज माता से शिशु में स्थानांतरित होती है — चरक ने इसे वर्जित बताया है।`,
+      garbhModern: `गर्भ संस्कार आपके बच्चे का पहला स्कूल है — और आप शिक्षक, शुरुआत से ही। प्राचीन भारतीय विज्ञान (हाँ, 2,500 साल पहले लिखी चरक संहिता से समर्थित) कहता है कि आपके बच्चे का व्यक्तित्व, बुद्धि और भावनात्मक प्रवृत्तियाँ गर्भ में ही बनती हैं।
+
+यहाँ बताया गया है जिस पर शोध और परंपरा दोनों सहमत हैं:
+✓ आपके तनाव के हार्मोन आपके बच्चे तक पहुँचते हैं — इसलिए संगीत, मंत्र और अच्छे भोजन से खुद को शांत रखें।
+✓ चौथा मास वह समय है जब चेतना प्रवेश करती है — तब से आपका बच्चा वास्तव में जागरूक होता है। उनकी इच्छाओं का सम्मान करें।
+✓ रोज़ाना अपने पेट से बात करें। ज़ोर से पढ़ें। शास्त्रीय राग बजाएं (सुबह भैरव, शाम को यमन)।
+✓ नामकरण संस्कार यादृच्छिक नहीं है — जन्म के समय आपके बच्चे का नक्षत्र उन्हें उनकी ध्वनि, उनका कंपन देता है। यही है नाम अक्षर।
+
+लक्ष्य? एक सात्विक (शांत, बुद्धिमान, दयालु) बच्चा। विधि है — जन्म से पहले ही 9 महीने की सचेत पालन-पोषण।`,
     },
     babyNames: {
       title: 'नक्षत्र आधारित शिशु नाम',

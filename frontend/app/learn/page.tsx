@@ -7,21 +7,6 @@ import { useLanguage } from '@/components/LanguageProvider'
 interface Lesson { id: string; title: string; icon: string; description: string }
 interface LessonDetail { id: string; title: string; topics: object[] }
 
-const GARBH_CLASSICAL = `Garbh Sanskar (गर्भ संस्कार) is the ancient Vedic science of educating and nurturing the unborn child. The texts of Charaka Samhita (Sharirasthana Adhyaya) and Ashtanga Hridayam establish that the child's samskaras begin at the moment of Garbhadhana (conception). The mother is the child's first guru.
-
-Through Svadhyaya (sacred study), Sattvic Ahara (pure diet), Mantra Japa, and the right Nakshatra muhurtas, the parents directly shape the Buddhi, Chitta, and Prarabdha karma of the incoming soul. Garbhadhana itself must be performed on an auspicious Nakshatra — Rohini being supreme — on even nights for Putra-kamna.
-
-The Dauhrida (cravings) of the 4th month must be honored as they represent the unborn child's desires. The recitation of Vishnu Sahasranama in months 2–3 and Gayatri Mantra in month 6 are prescribed to develop the child's Sattvic tendencies. In the 8th month, Abhyanga must be stopped as Ojas transfers from mother to child — disrupting this is contraindicated by Charaka.`
-
-const GARBH_MODERN = `Garbh Sanskar is your baby's first school — and you're the teacher, starting from day zero. Ancient Indian science (yes, backed by Charaka Samhita written 2,500 years ago) says your baby's personality, intelligence, and emotional tendencies are shaped in the womb.
-
-Here's what the research and tradition agree on:
-✓ Your stress hormones reach your baby — so calm yourself with music, mantras, and good food.
-✓ Month 4 is when consciousness enters — this is when your baby becomes truly aware. Honor their cravings.
-✓ Talk to your belly daily. Read out loud. Play classical ragas (Bhairav in the morning, Yaman in the evening).
-✓ The naming ceremony isn't random — your baby's Nakshatra at birth gives them their sound, their vibration. That's their Naam Akshara.
-
-The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of intentional parenting before they're even born.`
 
 export default function LearnPage() {
   const [lessons, setLessons] = useState<Lesson[]>([])
@@ -83,11 +68,7 @@ export default function LearnPage() {
           >
             <div className="text-3xl mb-2">🌸</div>
             <h2 className="text-gold-400 font-bold mb-1">{t.learn.garbhSanskar}</h2>
-            <p className="text-gray-400 text-sm">
-              {lang === 'hi'
-                ? 'चरक संहिता और आयुर्वेद की परंपरा से — गर्भस्थ शिशु के लिए प्राचीन वैदिक ज्ञान'
-                : 'Charaka Samhita & Ayurvedic tradition — ancient wisdom for nurturing the unborn child'}
-            </p>
+            <p className="text-gray-400 text-sm">{t.learn.garbhSanskarDesc}</p>
           </button>
         </div>
       ) : showGarbh ? (
@@ -96,9 +77,7 @@ export default function LearnPage() {
             {t.learn.back}
           </button>
           <h2 className="text-2xl font-bold text-gold-400 mb-2">{t.learn.garbhSanskar}</h2>
-          <p className="text-gray-400 text-sm mb-6">
-            {lang === 'hi' ? 'चरक संहिता, अष्टांग हृदयम् — वैदिक परंपरा' : 'Charaka Samhita, Ashtanga Hridayam — Vedic tradition'}
-          </p>
+          <p className="text-gray-400 text-sm mb-6">{t.learn.garbhSource}</p>
           <div className="flex gap-2 mb-6">
             <button
               onClick={() => setGarbhTab('classical')}
@@ -115,12 +94,12 @@ export default function LearnPage() {
           </div>
           <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-6">
             <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
-              {garbhTab === 'classical' ? GARBH_CLASSICAL : GARBH_MODERN}
+              {garbhTab === 'classical' ? t.learn.garbhClassical : t.learn.garbhModern}
             </p>
           </div>
           <div className="mt-4 text-center">
             <a href="/garbh-sanskar" className="inline-block bg-saffron-600/20 border border-saffron-600/40 text-saffron-400 hover:text-gold-400 px-5 py-2 rounded-lg text-sm transition">
-              → {lang === 'hi' ? 'गर्भ संस्कार मार्गदर्शक खोलें' : 'Open Garbh Sanskar Guide'}
+              → {t.learn.garbhOpenGuide}
             </a>
           </div>
         </div>
