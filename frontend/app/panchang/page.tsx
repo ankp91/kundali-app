@@ -239,14 +239,8 @@ export default function PanchangPage() {
     setMuhurtaLoading(false)
   }
 
-  const tabs = [
-    { key: 'panchang',   label: p.tabs.panchang },
-    { key: 'choghadiya', label: p.tabs.choghadiya },
-    { key: 'hora',       label: p.tabs.hora },
-    { key: 'vedic',      label: p.tabs.vedic },
-    { key: 'calendar',   label: p.tabs.calendar },
-    { key: 'muhurta',    label: p.tabs.muhurta },
-  ] as const
+  const tabKeys = ['panchang', 'choghadiya', 'hora', 'vedic', 'calendar', 'muhurta'] as const
+  type TabKey = typeof tabKeys[number]
 
   return (
     <div className="min-h-screen bg-deepblue-950 text-gray-100">
@@ -299,17 +293,17 @@ export default function PanchangPage() {
           <>
             {/* Tab bar */}
             <div className="flex flex-wrap gap-1.5">
-              {tabs.map(tab => (
+              {tabKeys.map(key => (
                 <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key)}
+                  key={key}
+                  onClick={() => setActiveTab(key)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
-                    activeTab === tab.key
+                    activeTab === key
                       ? 'bg-saffron-600/30 text-gold-400 border border-saffron-600/50'
                       : 'text-saffron-400/70 hover:text-gold-400 border border-transparent'
                   }`}
                 >
-                  {tab.label}
+                  {p.tabs[key]}
                 </button>
               ))}
             </div>
