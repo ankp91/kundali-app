@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
+import { useLanguage } from '@/components/LanguageProvider'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -105,6 +106,8 @@ function computeLiveVedic(sunrise: string, sunset: string, ghatiDurMin: number, 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PanchangPage() {
+  const { t } = useLanguage()
+  const p = t.panchang
   const [date, setDate]         = useState(TODAY)
   const [query, setQuery]       = useState('')
   const [location, setLocation] = useState<GeoResult | null>(null)
@@ -237,12 +240,12 @@ export default function PanchangPage() {
   }
 
   const tabs = [
-    { key: 'panchang',   label: 'Panchang' },
-    { key: 'choghadiya', label: 'Choghadiya' },
-    { key: 'hora',       label: 'Hora' },
-    { key: 'vedic',      label: 'Vedic Time' },
-    { key: 'calendar',   label: '📅 Calendar' },
-    { key: 'muhurta',    label: '✨ Muhurta' },
+    { key: 'panchang',   label: p.tabs.panchang },
+    { key: 'choghadiya', label: p.tabs.choghadiya },
+    { key: 'hora',       label: p.tabs.hora },
+    { key: 'vedic',      label: p.tabs.vedic },
+    { key: 'calendar',   label: p.tabs.calendar },
+    { key: 'muhurta',    label: p.tabs.muhurta },
   ] as const
 
   return (
@@ -251,15 +254,15 @@ export default function PanchangPage() {
 
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gold-400">🪔 Daily Panchang</h1>
-          <p className="text-saffron-400/70 text-sm mt-1">Tithi · Nakshatra · Yoga · Karana · Choghadiya · Hora · Vedic Time</p>
+          <h1 className="text-3xl font-bold text-gold-400">{p.header}</h1>
+          <p className="text-saffron-400/70 text-sm mt-1">{p.subheader}</p>
         </div>
 
         {/* Controls */}
         <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-4 space-y-3">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 min-w-0">
-              <label className="text-xs text-saffron-400/70 block mb-1">Date</label>
+              <label className="text-xs text-saffron-400/70 block mb-1">{p.dateLabel}</label>
               <input
                 type="date" value={date}
                 onChange={e => onDateChange(e.target.value)}
@@ -267,20 +270,20 @@ export default function PanchangPage() {
               />
             </div>
             <div className="flex-[2]">
-              <label className="text-xs text-saffron-400/70 block mb-1">Location</label>
+              <label className="text-xs text-saffron-400/70 block mb-1">{p.locationLabel}</label>
               <div className="flex gap-2">
                 <input
                   type="text" value={query}
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchLocation()}
-                  placeholder="Search city (e.g. Mumbai, India)"
+                  placeholder={p.locationPlaceholder}
                   className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
                 />
                 <button
                   onClick={searchLocation} disabled={geoLoading}
                   className="px-4 py-2 bg-saffron-600/20 border border-saffron-600/40 rounded-lg text-sm text-saffron-300 hover:bg-saffron-600/30 transition disabled:opacity-50"
                 >
-                  {geoLoading ? '...' : 'Set'}
+                  {geoLoading ? '...' : p.setBtn}
                 </button>
               </div>
               {geoError && <p className="text-red-400 text-xs mt-1">{geoError}</p>}
@@ -289,7 +292,7 @@ export default function PanchangPage() {
           </div>
         </div>
 
-        {loading && <div className="text-center py-12 text-saffron-400/60">Loading panchang…</div>}
+        {loading && <div className="text-center py-12 text-saffron-400/60">{p.loadingPanchang}</div>}
         {error   && <div className="bg-red-900/20 border border-red-700/30 rounded-xl p-4 text-red-300 text-sm">{error}</div>}
 
         {data && !loading && (
@@ -317,9 +320,9 @@ export default function PanchangPage() {
                 {/* Sun/Moon times */}
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { label: 'Sunrise 🌅', value: data.sunrise },
-                    { label: 'Sunset 🌇',  value: data.sunset  },
-                    { label: 'Moonrise 🌙', value: data.moonrise },
+                    { label: p.sunrise, value: data.sunrise },
+                    { label: p.sunset,  value: data.sunset  },
+                    { label: p.moonrise, value: data.moonrise },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-3 text-center">
                       <div className="text-xs text-saffron-400/60 mb-1">{label}</div>
@@ -335,14 +338,14 @@ export default function PanchangPage() {
                       {data.date} — {data.vara.name}{' '}
                       <span className="text-saffron-400/60 font-normal">({data.vara.name_hi})</span>
                     </h2>
-                    <p className="text-xs text-gray-500 mt-0.5">Lord of the day: {data.vara.lord}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.lordOfDay}: {data.vara.lord}</p>
                   </div>
                   <div className="divide-y divide-saffron-700/10">
                     {[
-                      { label: 'Tithi',     value: `${data.tithi.paksha} ${data.tithi.name}`,   end: data.tithi.end_time,     sub: `${data.tithi.number}/30` },
-                      { label: 'Nakshatra', value: data.nakshatra.name,                          end: data.nakshatra.end_time, sub: `${data.nakshatra.name_hi} · Pada ${data.nakshatra.pada}` },
-                      { label: 'Yoga',      value: data.yoga.name,                               end: '',                      sub: `${data.yoga.number}/27` },
-                      { label: 'Karana',    value: data.karana.name,                             end: '',                      sub: 'Half-Tithi' },
+                      { label: p.tithi,     value: `${data.tithi.paksha} ${data.tithi.name}`,   end: data.tithi.end_time,     sub: `${data.tithi.number}/30` },
+                      { label: p.nakshatra, value: data.nakshatra.name,                          end: data.nakshatra.end_time, sub: `${data.nakshatra.name_hi} · ${p.pada} ${data.nakshatra.pada}` },
+                      { label: p.yoga,      value: data.yoga.name,                               end: '',                      sub: `${data.yoga.number}/27` },
+                      { label: p.karana,    value: data.karana.name,                             end: '',                      sub: p.halfTithi },
                     ].map(({ label, value, end, sub }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-3">
                         <span className="text-saffron-400/70 text-sm w-24">{label}</span>
@@ -350,7 +353,7 @@ export default function PanchangPage() {
                           <div className="text-gray-100 font-medium text-sm">{value}</div>
                           <div className="text-gray-500 text-xs">
                             {sub}
-                            {end && <span className="ml-2 text-saffron-400/60">upto {end}</span>}
+                            {end && <span className="ml-2 text-saffron-400/60">{p.upto} {end}</span>}
                           </div>
                         </div>
                       </div>
@@ -361,16 +364,16 @@ export default function PanchangPage() {
                 {/* Seasonal info */}
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-saffron-700/20">
-                    <h3 className="text-gold-400 font-bold text-sm">Samvat & Seasonal Info</h3>
+                    <h3 className="text-gold-400 font-bold text-sm">{p.samvatSection}</h3>
                   </div>
                   <div className="grid grid-cols-2 divide-x divide-saffron-700/10">
                     {[
-                      { label: 'Vikram Samvat', value: String(data.samvat.vikram) },
-                      { label: 'Shaka Samvat',  value: String(data.samvat.shaka)  },
-                      { label: 'Ritu',          value: data.ritu                  },
-                      { label: 'Ayana',         value: data.ayana                 },
-                      { label: 'Dinamana',      value: data.dinamana              },
-                      { label: 'Ratrimana',     value: data.ratrimana             },
+                      { label: p.vikramSamvat, value: String(data.samvat.vikram) },
+                      { label: p.shakaSamvat,  value: String(data.samvat.shaka)  },
+                      { label: p.ritu,         value: data.ritu                  },
+                      { label: p.ayana,        value: data.ayana                 },
+                      { label: p.dinamana,     value: data.dinamana              },
+                      { label: p.ratrimana,    value: data.ratrimana             },
                     ].map(({ label, value }) => (
                       <div key={label} className="px-4 py-2.5 flex items-center justify-between">
                         <span className="text-saffron-400/70 text-xs">{label}</span>
@@ -383,14 +386,14 @@ export default function PanchangPage() {
                 {/* Inauspicious timings */}
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-saffron-700/20">
-                    <h3 className="text-red-400 font-bold text-sm">⚠ Inauspicious Timings</h3>
-                    <p className="text-xs text-gray-500 mt-0.5">Avoid important activities during these periods</p>
+                    <h3 className="text-red-400 font-bold text-sm">{p.inauspiciousTitle}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.inauspiciousDesc}</p>
                   </div>
                   <div className="divide-y divide-saffron-700/10">
                     {[
-                      { label: 'Rahu Kalam',     desc: 'Most inauspicious — ruled by Rahu',     ...data.kalams.rahu_kalam, color: 'text-red-400' },
-                      { label: 'Yamaganda',      desc: 'Ruled by Yama — inauspicious',           ...data.kalams.yamaganda,  color: 'text-orange-400' },
-                      { label: 'Gulikai Kalam',  desc: 'Ruled by Saturn — avoid new ventures',  ...data.kalams.gulikai,    color: 'text-yellow-500' },
+                      { label: p.rahuKalam,    desc: p.rahuKalamDesc,  ...data.kalams.rahu_kalam, color: 'text-red-400' },
+                      { label: p.yamaganda,    desc: p.yamagandaDesc,  ...data.kalams.yamaganda,  color: 'text-orange-400' },
+                      { label: p.gulikaiKalam, desc: p.gulikaiDesc,    ...data.kalams.gulikai,    color: 'text-yellow-500' },
                     ].map(({ label, desc, start, end, color }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-2.5">
                         <div>
@@ -406,13 +409,13 @@ export default function PanchangPage() {
                 {/* Auspicious timings */}
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                   <div className="px-4 py-2.5 border-b border-saffron-700/20">
-                    <h3 className="text-emerald-400 font-bold text-sm">✨ Auspicious Timings</h3>
+                    <h3 className="text-emerald-400 font-bold text-sm">{p.auspiciousTitle}</h3>
                   </div>
                   <div className="divide-y divide-saffron-700/10">
                     {[
-                      { label: 'Brahma Muhurta', desc: '96-48 min before sunrise — ideal for prayers & meditation', ...data.auspicious.brahma_muhurta },
-                      { label: 'Abhijit Muhurta', desc: 'Solar noon ±24 min — powerful for important tasks',        ...data.auspicious.abhijit_muhurta },
-                      { label: 'Godhuli Muhurta', desc: 'Sunset ±12 min — auspicious twilight period',              ...data.auspicious.godhuli_muhurta },
+                      { label: p.brahmaMuhurta,  desc: p.brahmaMuhurtaDesc,  ...data.auspicious.brahma_muhurta },
+                      { label: p.abhijitMuhurta, desc: p.abhijitMuhurtaDesc, ...data.auspicious.abhijit_muhurta },
+                      { label: p.godhuliMuhurta, desc: p.godhuliMuhurtaDesc, ...data.auspicious.godhuli_muhurta },
                     ].map(({ label, desc, start, end }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-2.5">
                         <div>
@@ -431,19 +434,18 @@ export default function PanchangPage() {
             {activeTab === 'choghadiya' && (
               <div className="space-y-4">
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 text-xs text-gray-400">
-                  <span className="font-medium text-saffron-400">Choghadiya</span> divides each day/night into 8 equal slots.
-                  Use <span className="text-emerald-300">Amrit, Shubh, Labh</span> for important work.
-                  <span className="text-red-400 ml-1">⊗ Rahu</span> / <span className="text-orange-400">⊗ Yama</span> / <span className="text-yellow-500">⊗ Gulika</span> indicate overlapping inauspicious periods — even good Choghadiya is weakened.
+                  <span className="font-medium text-saffron-400">{p.tabs.choghadiya}</span> {p.choghadiyaInfo}
+                  <span className="text-red-400 ml-1">⊗ Rahu</span> / <span className="text-orange-400">⊗ Yama</span> / <span className="text-yellow-500">⊗ Gulika</span>
                 </div>
                 {(['day', 'night'] as const).map(period => (
                   <div key={period} className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                     <div className="px-4 py-2.5 border-b border-saffron-700/20">
                       <h3 className="text-gold-400 font-bold text-sm">
-                        {period === 'day' ? '☀ Day Choghadiya' : '🌙 Night Choghadiya'}
+                        {period === 'day' ? p.dayChoghadiya : p.nightChoghadiya}
                         <span className="ml-2 text-gray-500 font-normal text-xs">
                           {period === 'day'
-                            ? `Sunrise ${data.sunrise}`
-                            : `Sunset ${data.sunset}`}
+                            ? `${p.sunriseLabel} ${data.sunrise}`
+                            : `${p.sunsetLabel} ${data.sunset}`}
                         </span>
                       </h3>
                     </div>
@@ -455,7 +457,7 @@ export default function PanchangPage() {
                             <span className={`text-sm font-medium px-2 py-0.5 rounded border ${NATURE_STYLE[slot.nature]}`}>
                               {slot.name}
                             </span>
-                            {slot.active && <span className="text-xs text-gold-400 font-bold">← Now</span>}
+                            {slot.active && <span className="text-xs text-gold-400 font-bold">{p.nowIndicator}</span>}
                             {/* Overlap warnings */}
                             {slot.overlaps?.map(k => (
                               <span
@@ -482,11 +484,11 @@ export default function PanchangPage() {
 
                 {/* Kalam quick ref */}
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 space-y-1.5">
-                  <p className="text-xs text-saffron-400 font-medium mb-2">Today&apos;s Inauspicious Periods</p>
+                  <p className="text-xs text-saffron-400 font-medium mb-2">{p.todayInauspicious}</p>
                   {[
-                    { label: 'Rahu Kalam', color: 'text-red-400',    ...data.kalams.rahu_kalam },
-                    { label: 'Yamaganda',  color: 'text-orange-400', ...data.kalams.yamaganda  },
-                    { label: 'Gulikai',    color: 'text-yellow-500', ...data.kalams.gulikai    },
+                    { label: p.rahuKalam, color: 'text-red-400',    ...data.kalams.rahu_kalam },
+                    { label: p.yamaganda, color: 'text-orange-400', ...data.kalams.yamaganda  },
+                    { label: p.gulikaiKalam, color: 'text-yellow-500', ...data.kalams.gulikai },
                   ].map(({ label, color, start, end }) => (
                     <div key={label} className="flex justify-between text-xs">
                       <span className={`font-medium ${color}`}>{label}</span>
@@ -501,7 +503,7 @@ export default function PanchangPage() {
             {activeTab === 'hora' && (
               <div className="space-y-4">
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 text-xs text-gray-400">
-                  <span className="font-medium text-saffron-400">Hora</span> — Each day has 24 planetary hours starting from sunrise. Work aligned with the ruling planet is more effective.
+                  <span className="font-medium text-saffron-400">{p.tabs.hora}</span> — {p.horaInfo}
                 </div>
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                   <div className="divide-y divide-saffron-700/10">
@@ -511,7 +513,7 @@ export default function PanchangPage() {
                         <span className="text-sm font-bold w-20" style={{ color: PLANET_COLOR[h.planet] || '#aaa' }}>
                           {h.planet}
                         </span>
-                        {h.active && <span className="text-xs text-gold-400 font-bold">← Now</span>}
+                        {h.active && <span className="text-xs text-gold-400 font-bold">{p.nowIndicator}</span>}
                         <span className="ml-auto text-gray-400 text-xs">{h.start} – {h.end}</span>
                       </div>
                     ))}
@@ -525,25 +527,25 @@ export default function PanchangPage() {
               <div className="space-y-4">
                 {/* Live time display */}
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6 text-center">
-                  <p className="text-saffron-400/60 text-xs mb-2">Current Vedic Time (live)</p>
+                  <p className="text-saffron-400/60 text-xs mb-2">{p.liveVedicTitle}</p>
                   {liveVedic ? (
                     <>
                       <div className="text-4xl font-bold text-gold-400 tabular-nums">
-                        {liveVedic.ghati} <span className="text-2xl">Ghati</span>{' '}
-                        {liveVedic.pala} <span className="text-2xl">Pala</span>{' '}
-                        {liveVedic.vipala} <span className="text-2xl">Vipala</span>
+                        {liveVedic.ghati} <span className="text-2xl">{p.ghati}</span>{' '}
+                        {liveVedic.pala} <span className="text-2xl">{p.pala}</span>{' '}
+                        {liveVedic.vipala} <span className="text-2xl">{p.vipala}</span>
                       </div>
                       <p className="text-gray-500 text-xs mt-2">
-                        {liveVedic.isDay ? '☀ Day time (from sunrise)' : '🌙 Night time'}
+                        {liveVedic.isDay ? p.daytime : p.nighttime}
                       </p>
                     </>
                   ) : (
                     <div className="text-4xl font-bold text-gold-400">
-                      {data.vedic_time.ghati} Ghati {data.vedic_time.pala} Pala {data.vedic_time.vipala} Vipala
+                      {data.vedic_time.ghati} {p.ghati} {data.vedic_time.pala} {p.pala} {data.vedic_time.vipala} {p.vipala}
                     </div>
                   )}
                   <p className="text-saffron-400/50 text-xs mt-1">
-                    Sunrise {data.vedic_time.sunrise} · Sunset {data.vedic_time.sunset}
+                    {p.sunriseLabel} {data.vedic_time.sunrise} · {p.sunsetLabel} {data.vedic_time.sunset}
                     {' '}· 1 Ghati ≈ {(() => {
                     const [srH2, srM2] = data.vedic_time.sunrise.split(':').map(Number)
                     const [ssH2, ssM2] = data.vedic_time.sunset.split(':').map(Number)
@@ -556,7 +558,7 @@ export default function PanchangPage() {
                   <div className="mt-3 pt-3 border-t border-saffron-700/20 text-sm text-gray-300">
                     {data.masa && <>{data.masa} · </>}{data.tithi.paksha} {data.tithi.name}
                     <span className="mx-2 text-saffron-700/50">·</span>
-                    {data.samvat.vikram} Vikrama Samvat
+                    {data.samvat.vikram} {p.vikramaSamvat}
                     <span className="mx-2 text-saffron-700/50">·</span>
                     {data.vara.name}
                   </div>
@@ -577,7 +579,7 @@ export default function PanchangPage() {
                 {/* Explanation */}
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                   <div className="px-4 py-3 border-b border-saffron-700/20">
-                    <h3 className="text-gold-400 font-bold text-sm">Understanding Vedic Time</h3>
+                    <h3 className="text-gold-400 font-bold text-sm">{p.understandingVedic}</h3>
                   </div>
                   <div className="divide-y divide-saffron-700/10">
                     {[
@@ -599,7 +601,7 @@ export default function PanchangPage() {
                 </div>
 
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 text-xs text-gray-400">
-                  <span className="text-saffron-400 font-medium">Note:</span> Unlike clock time, Vedic Ghati is relative to sunrise/sunset — its duration in minutes changes with the season and location. Today a Ghati is {data.vedic_time.ghati_duration_min} min at your location.
+                  <span className="text-saffron-400 font-medium">{p.vedicNotePrefix}</span> {p.vedicNoteText} Today a {p.ghati} is {data.vedic_time.ghati_duration_min} min at your location.
                 </div>
               </div>
             )}
@@ -617,7 +619,7 @@ export default function PanchangPage() {
                     >‹</button>
                     <div className="flex items-center gap-2 flex-1 min-w-[200px]">
                       <select value={calMonth} onChange={e => setCalMonth(Number(e.target.value))} className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
-                        {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i) => <option key={i} value={i+1}>{m}</option>)}
+                        {p.months.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
                       </select>
                       <input type="number" value={calYear} onChange={e => setCalYear(Number(e.target.value))} className="w-24 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
                     </div>
@@ -628,13 +630,13 @@ export default function PanchangPage() {
                       title="Next month"
                     >›</button>
                     <button onClick={() => location && fetchCalendar(location, calYear, calMonth)} disabled={calLoading || !location} className="px-4 py-2 bg-saffron-700/20 border border-saffron-600/40 text-saffron-400 hover:text-gold-400 rounded-lg text-sm transition disabled:opacity-50">
-                      {calLoading ? 'Loading...' : 'Go'}
+                      {calLoading ? p.calendarLoading : p.goBtn}
                     </button>
                   </div>
                   {calData.length > 0 && (
                     <>
                       <div className="grid grid-cols-7 gap-1 mb-2">
-                        {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => (
+                        {p.weekdays.map(d => (
                           <div key={d} className="text-center text-xs text-saffron-400/70 font-medium py-1">{d}</div>
                         ))}
                       </div>
@@ -670,7 +672,7 @@ export default function PanchangPage() {
                                         {day.festival.split('·')[0].trim()}
                                       </div>
                                     )}
-                                    {day.is_today && <div className="text-[9px] text-saffron-400 font-bold mt-0.5">Today</div>}
+                                    {day.is_today && <div className="text-[9px] text-saffron-400 font-bold mt-0.5">{p.todayTag}</div>}
                                   </>
                                 )}
                               </div>
@@ -679,10 +681,10 @@ export default function PanchangPage() {
                         ))
                       })()}
                       <div className="mt-3 flex gap-4 text-xs text-gray-500">
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1" />Auspicious</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-saffron-400 mr-1" />Today</span>
-                        <span><span className="inline-block w-2 h-2 rounded-full bg-gold-400 mr-1" />Selected</span>
-                        <span className="text-saffron-400/60">K=Krishna · S=Shukla</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-green-400 mr-1" />{p.auspiciousTag}</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-saffron-400 mr-1" />{p.todayTag}</span>
+                        <span><span className="inline-block w-2 h-2 rounded-full bg-gold-400 mr-1" />{p.selectedTag}</span>
+                        <span className="text-saffron-400/60">{p.pakshaCodes}</span>
                       </div>
 
                       {/* Day detail panel */}
@@ -718,9 +720,9 @@ export default function PanchangPage() {
                           {/* Sun / Moon times */}
                           <div className="grid grid-cols-3 gap-2">
                             {[
-                              { icon: '🌅', label: 'Sunrise',  value: (f?.sunrise as string) || selectedDay.sunrise },
-                              { icon: '🌇', label: 'Sunset',   value: (f?.sunset  as string) || '—' },
-                              { icon: '🌕', label: 'Moonrise', value: (f?.moonrise as string) || '—' },
+                              { icon: '🌅', label: p.sunriseLabel,  value: (f?.sunrise as string) || selectedDay.sunrise },
+                              { icon: '🌇', label: p.sunsetLabel,  value: (f?.sunset  as string) || '—' },
+                              { icon: '🌕', label: p.moonrise.replace(' 🌙',''), value: (f?.moonrise as string) || '—' },
                             ].map(({ icon, label, value }) => (
                               <div key={label} className="bg-deepblue-900/60 rounded-lg px-2 py-2 text-center">
                                 <div className="text-lg">{icon}</div>
@@ -734,11 +736,11 @@ export default function PanchangPage() {
                           {samvat && (
                             <div className="grid grid-cols-2 gap-2">
                               <div className="bg-deepblue-900/60 rounded-lg px-3 py-2">
-                                <div className="text-saffron-400/60 text-[10px]">Vikram Samvat</div>
+                                <div className="text-saffron-400/60 text-[10px]">{p.vikramSamvat}</div>
                                 <div className="text-gray-200 text-xs font-medium mt-0.5">{samvat.vikram as number}</div>
                               </div>
                               <div className="bg-deepblue-900/60 rounded-lg px-3 py-2">
-                                <div className="text-saffron-400/60 text-[10px]">Shaka Samvat</div>
+                                <div className="text-saffron-400/60 text-[10px]">{p.shakaSamvat}</div>
                                 <div className="text-gray-200 text-xs font-medium mt-0.5">{samvat.shaka as number}</div>
                               </div>
                             </div>
@@ -747,15 +749,15 @@ export default function PanchangPage() {
                           {/* Panchang details */}
                           <div className="space-y-1.5">
                             {[
-                              { label: 'Masa (Purnimanta)', value: selectedDay.masa || '—' },
-                              { label: 'Paksha',  value: selectedDay.paksha },
-                              { label: 'Vara',    value: vara ? `${vara.name} (${vara.lord})` : (selectedDay.vara || selectedDay.day_of_week) },
-                              { label: 'Tithi',   value: tithi ? `${tithi.paksha} ${tithi.name} · upto ${tithi.end_time}` : `${selectedDay.paksha} ${selectedDay.tithi}` },
-                              { label: 'Nakshatra', value: nak ? `${nak.name} (${nak.name_hi}) Pada ${nak.pada} · upto ${nak.end_time}` : `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
-                              { label: 'Yoga',    value: yoga ? `${yoga.name} · upto ${(f?.vedic_time as Record<string,unknown> | null)?.ghati ?? ''}` : selectedDay.yoga },
-                              { label: 'Karana',  value: karana ? (karana.name as string) : '—' },
-                              { label: 'Ritu',    value: (f?.ritu as string) || '—' },
-                              { label: 'Ayana',   value: (f?.ayana as string) || '—' },
+                              { label: p.masa, value: selectedDay.masa || '—' },
+                              { label: p.paksha, value: selectedDay.paksha },
+                              { label: p.vara,   value: vara ? `${vara.name} (${vara.lord})` : (selectedDay.vara || selectedDay.day_of_week) },
+                              { label: p.tithi,  value: tithi ? `${tithi.paksha} ${tithi.name} · ${p.upto} ${tithi.end_time}` : `${selectedDay.paksha} ${selectedDay.tithi}` },
+                              { label: p.nakshatra, value: nak ? `${nak.name} (${nak.name_hi}) ${p.pada} ${nak.pada} · ${p.upto} ${nak.end_time}` : `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
+                              { label: p.yoga,   value: yoga ? `${yoga.name} · ${p.upto} ${(f?.vedic_time as Record<string,unknown> | null)?.ghati ?? ''}` : selectedDay.yoga },
+                              { label: p.karana, value: karana ? (karana.name as string) : '—' },
+                              { label: p.ritu,   value: (f?.ritu as string) || '—' },
+                              { label: p.ayana,  value: (f?.ayana as string) || '—' },
                             ].map(({ label, value }) => (
                               <div key={label} className="flex items-baseline justify-between py-1 border-b border-saffron-700/10">
                                 <span className="text-saffron-400/70 text-xs w-32 shrink-0">{label}</span>
@@ -767,12 +769,12 @@ export default function PanchangPage() {
                           {/* Kalams */}
                           {kalams && (
                             <div>
-                              <div className="text-saffron-400/60 text-[10px] uppercase tracking-wide mb-1.5">Inauspicious Periods</div>
+                              <div className="text-saffron-400/60 text-[10px] uppercase tracking-wide mb-1.5">{p.inauspiciousPeriods}</div>
                               <div className="grid grid-cols-1 gap-1">
                                 {[
-                                  { label: 'Rahu Kalam',  start: kalams.rahu_kalam?.start,  end: kalams.rahu_kalam?.end },
-                                  { label: 'Yamaganda',   start: kalams.yamaganda?.start,   end: kalams.yamaganda?.end },
-                                  { label: 'Gulikai',     start: kalams.gulikai?.start,     end: kalams.gulikai?.end },
+                                  { label: p.rahuKalam,    start: kalams.rahu_kalam?.start,  end: kalams.rahu_kalam?.end },
+                                  { label: p.yamaganda,   start: kalams.yamaganda?.start,   end: kalams.yamaganda?.end },
+                                  { label: p.gulikaiKalam, start: kalams.gulikai?.start,    end: kalams.gulikai?.end },
                                 ].map(({ label, start, end }) => (
                                   <div key={label} className="flex justify-between bg-red-900/10 border border-red-700/20 rounded px-2 py-1">
                                     <span className="text-red-300/80 text-xs">{label}</span>
@@ -786,12 +788,12 @@ export default function PanchangPage() {
                           {/* Auspicious timings */}
                           {ausp && (
                             <div>
-                              <div className="text-saffron-400/60 text-[10px] uppercase tracking-wide mb-1.5">Auspicious Timings</div>
+                              <div className="text-saffron-400/60 text-[10px] uppercase tracking-wide mb-1.5">{p.auspiciousTimings}</div>
                               <div className="grid grid-cols-1 gap-1">
                                 {[
-                                  { label: 'Brahma Muhurta', start: ausp.brahma_muhurta?.start,  end: ausp.brahma_muhurta?.end },
-                                  { label: 'Abhijit',        start: ausp.abhijit_muhurta?.start, end: ausp.abhijit_muhurta?.end },
-                                  { label: 'Godhuli',        start: ausp.godhuli_muhurta?.start, end: ausp.godhuli_muhurta?.end },
+                                  { label: p.brahma,  start: ausp.brahma_muhurta?.start,  end: ausp.brahma_muhurta?.end },
+                                  { label: p.abhijit, start: ausp.abhijit_muhurta?.start, end: ausp.abhijit_muhurta?.end },
+                                  { label: p.godhuli, start: ausp.godhuli_muhurta?.start, end: ausp.godhuli_muhurta?.end },
                                 ].map(({ label, start, end }) => (
                                   <div key={label} className="flex justify-between bg-green-900/10 border border-green-700/20 rounded px-2 py-1">
                                     <span className="text-green-300/80 text-xs">{label}</span>
@@ -804,18 +806,18 @@ export default function PanchangPage() {
 
                           {/* Tags */}
                           <div className="flex gap-2 flex-wrap">
-                            {selectedDay.is_auspicious && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-full">✓ Auspicious</span>}
-                            {selectedDay.tithi_num === 11 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">🙏 Ekadashi</span>}
-                            {selectedDay.tithi_num === 26 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">🙏 Ekadashi</span>}
-                            {selectedDay.tithi_num === 15 && <span className="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-1 rounded-full">🌕 Purnima</span>}
-                            {selectedDay.tithi_num === 30 && <span className="text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30 px-2 py-1 rounded-full">🌑 Amavasya</span>}
+                            {selectedDay.is_auspicious && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-full">{p.tagAuspicious}</span>}
+                            {selectedDay.tithi_num === 11 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">{p.tagEkadashi}</span>}
+                            {selectedDay.tithi_num === 26 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">{p.tagEkadashi}</span>}
+                            {selectedDay.tithi_num === 15 && <span className="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-1 rounded-full">{p.tagPurnima}</span>}
+                            {selectedDay.tithi_num === 30 && <span className="text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30 px-2 py-1 rounded-full">{p.tagAmavasya}</span>}
                           </div>
                         </div>
                         )
                       })()}
                     </>
                   )}
-                  {!location && <p className="text-gray-500 text-sm text-center py-4">Set a location first to view monthly panchang.</p>}
+                  {!location && <p className="text-gray-500 text-sm text-center py-4">{p.setLocationCalendar}</p>}
                 </div>
               </div>
             )}
@@ -824,35 +826,35 @@ export default function PanchangPage() {
             {activeTab === 'muhurta' && (
               <div className="space-y-4">
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-6">
-                  <h3 className="text-gold-400 font-bold text-lg mb-4">✨ Muhurta Finder</h3>
-                  <p className="text-gray-500 text-sm mb-4">Find auspicious dates for important activities based on tithi, nakshatra, vara, and choghadiya.</p>
+                  <h3 className="text-gold-400 font-bold text-lg mb-4">{p.muhurtaTitle}</h3>
+                  <p className="text-gray-500 text-sm mb-4">{p.muhurtaDesc}</p>
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="text-xs text-saffron-400/70 block mb-1">Activity</label>
+                      <label className="text-xs text-saffron-400/70 block mb-1">{p.activityLabel}</label>
                       <select value={muhurtaActivity} onChange={e => setMuhurtaActivity(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
-                        <option value="marriage">Marriage / Engagement</option>
-                        <option value="business">Business Start</option>
-                        <option value="travel">Travel</option>
-                        <option value="medical">Medical / Surgery</option>
-                        <option value="purchase">Purchase / Investment</option>
-                        <option value="education">Education / Learning</option>
+                        <option value="marriage">{p.activities.marriage}</option>
+                        <option value="business">{p.activities.business}</option>
+                        <option value="travel">{p.activities.travel}</option>
+                        <option value="medical">{p.activities.medical}</option>
+                        <option value="purchase">{p.activities.purchase}</option>
+                        <option value="education">{p.activities.education}</option>
                       </select>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="text-xs text-saffron-400/70 block mb-1">From</label>
+                        <label className="text-xs text-saffron-400/70 block mb-1">{p.fromLabel}</label>
                         <input type="date" value={muhurtaFrom} onChange={e => setMuhurtaFrom(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
                       </div>
                       <div>
-                        <label className="text-xs text-saffron-400/70 block mb-1">To</label>
+                        <label className="text-xs text-saffron-400/70 block mb-1">{p.toLabel}</label>
                         <input type="date" value={muhurtaTo} onChange={e => setMuhurtaTo(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
                       </div>
                     </div>
                   </div>
                   <button onClick={fetchMuhurta} disabled={muhurtaLoading || !location} className="w-full py-3 bg-saffron-600/20 border border-saffron-600/40 text-saffron-400 hover:text-gold-400 hover:border-gold-400 rounded-lg text-sm transition disabled:opacity-50">
-                    {muhurtaLoading ? 'Finding auspicious dates...' : '🔍 Find Muhurta'}
+                    {muhurtaLoading ? p.findingMuhurta : p.findMuhurtaBtn}
                   </button>
-                  {!location && <p className="text-gray-500 text-xs mt-2 text-center">Set a location first.</p>}
+                  {!location && <p className="text-gray-500 text-xs mt-2 text-center">{p.setLocFirst}</p>}
                 </div>
                 {muhurtaResults.length > 0 && (
                   <div className="space-y-3">
@@ -878,7 +880,7 @@ export default function PanchangPage() {
                   </div>
                 )}
                 {muhurtaResults.length === 0 && !muhurtaLoading && (
-                  <p className="text-gray-500 text-sm text-center">No results yet. Set your activity and date range, then click Find Muhurta.</p>
+                  <p className="text-gray-500 text-sm text-center">{p.noMuhurtaResults}</p>
                 )}
               </div>
             )}
