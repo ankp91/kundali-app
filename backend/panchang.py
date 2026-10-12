@@ -1,3 +1,4 @@
+from __future__ import annotations
 import swisseph as swe
 import pytz
 from datetime import datetime, date as date_cls
@@ -386,6 +387,26 @@ def calculate_panchang(date_str: str, lat: float, lon: float, tz_str: str) -> di
     ayana = 'Uttarayana' if (sun_sid < 90 or sun_sid >= 270) else 'Dakshinayana'
 
     masa = _get_masa(jd_sr)
+
+    # Festival (with kshaya tithi detection)
+    festival = _get_festival(masa, paksha, tithi_i + 1)
+    diff_next  = (_sidereal(jd_next_sr, swe.MOON) - _sidereal(jd_next_sr, swe.SUN)) % 360
+    tithi_next = int(diff_next / 12)
+    gap = (tithi_next - tithi_i) % 30
+    if gap > 1:
+        ksh_i      = (tithi_i + 1) % 30
+        ksh_paksha = 'Shukla' if ksh_i < 15 else 'Krishna'
+        ksh_num    = ksh_i + 1 if ksh_i < 15 else ksh_i - 14
+        ksh_num_30 = ksh_num if ksh_paksha == 'Shukla' else ksh_num + 15
+        ksh_fest   = _get_festival(masa, ksh_paksha, ksh_num_30)
+        if ksh_fest:
+            festival = (festival + ' · ' + ksh_fest) if festival else ksh_fest
+    sun_sid_noon = _sidereal(jd_noon, swe.SUN)
+    sun_sid_prev = _sidereal(jd_noon - 1.0, swe.SUN)
+    if sun_sid_prev < 270 <= sun_sid_noon or (sun_sid_prev > 300 and sun_sid_noon < 30):
+        sankranti = 'Makar Sankranti · Pongal · Lohri · Uttarayan'
+        festival  = (festival + ' · ' + sankranti) if festival else sankranti
+
     return {
         'date': date_str,
         'masa': masa,
@@ -421,6 +442,7 @@ def calculate_panchang(date_str: str, lat: float, lon: float, tz_str: str) -> di
         'ayana':     ayana,
         'dinamana':  f"{day_min // 60}h {day_min % 60:02d}m",
         'ratrimana': f"{night_min // 60}h {night_min % 60:02d}m",
+        'festival':  festival,
     }
 
 
@@ -556,6 +578,23 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
         paksha   = 'Shukla' if tithi_i < 15 else 'Krishna'
         masa     = _get_masa(jd_noon)
         festival = _get_festival(masa, paksha, tithi_i + 1)
+
+        # ── Kshaya tithi detection ──────────────────────────────────────────
+        # If a tithi starts AND ends within today (between this sunrise and
+        # the next), it is a kshaya (skipped) tithi — both tithis count today.
+        jd_next_sr = _rise_set(jd_noon + 0.5, swe.SUN, swe.CALC_RISE, lat, lon)
+        diff_next   = (_sidereal(jd_next_sr, swe.MOON) - _sidereal(jd_next_sr, swe.SUN)) % 360
+        tithi_next  = int(diff_next / 12)
+        gap = (tithi_next - tithi_i) % 30   # normally 1; >1 means a tithi was skipped
+        if gap > 1:
+            ksh_i      = (tithi_i + 1) % 30
+            ksh_paksha = 'Shukla' if ksh_i < 15 else 'Krishna'
+            ksh_num    = ksh_i + 1 if ksh_i < 15 else ksh_i - 14
+            ksh_num_30 = ksh_num if ksh_paksha == 'Shukla' else ksh_num + 15
+            ksh_fest   = _get_festival(masa, ksh_paksha, ksh_num_30)
+            if ksh_fest:
+                festival = (festival + ' · ' + ksh_fest) if festival else ksh_fest
+
         # Solar festival: Makar Sankranti when Sun crosses into sidereal Capricorn
         sun_sid_noon  = _sidereal(jd_noon, swe.SUN)
         sun_sid_prev  = _sidereal(jd_noon - 1.0, swe.SUN)
