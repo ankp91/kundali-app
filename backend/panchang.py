@@ -74,6 +74,13 @@ _MASA_NAMES = [
 ]
 
 _FESTIVALS = {
+    # Purnimanta system (North Indian): month starts after Purnima.
+    # Shukla paksha = same name in both Amanta and Purnimanta.
+    # Krishna paksha = Purnimanta name is one month AHEAD of Amanta name.
+    # e.g. Amanta Shravana Krishna = Purnimanta Bhadrapada Krishna (Janmashtami).
+    #      Amanta Bhadrapada Krishna = Purnimanta Ashwin Krishna (Pitru Paksha).
+    #      Amanta Ashwin Krishna = Purnimanta Kartik Krishna (Diwali week).
+
     # ── Chaitra ───────────────────────────────────────────────────────────
     ('Chaitra', 'Shukla',  1):  'Gudi Padwa · Ugadi · Chaitra Navratri Begins',
     ('Chaitra', 'Shukla',  2):  'Chaitra Navratri Day 2',
@@ -86,29 +93,35 @@ _FESTIVALS = {
     ('Chaitra', 'Shukla',  9):  'Ram Navami · Chaitra Navratri Day 9',
     ('Chaitra', 'Shukla', 13):  'Mahavir Jayanti (approx)',
     ('Chaitra', 'Shukla', 15):  'Hanuman Jayanti · Chaitra Purnima',
-    ('Chaitra', 'Krishna', 8):  'Sita Ashtami',
+    # Chaitra Krishna (Purnimanta) = Amanta Phalguna Krishna
+    ('Chaitra', 'Krishna', 15):  'Chaitra Amavasya',
     # ── Vaishakha ─────────────────────────────────────────────────────────
     ('Vaishakha', 'Shukla',  3):  'Akshaya Tritiya · Parashurama Jayanti',
     ('Vaishakha', 'Shukla',  6):  'Shankaracharya Jayanti',
     ('Vaishakha', 'Shukla', 15):  'Buddha Purnima · Vaishakha Purnima',
-    ('Vaishakha', 'Krishna',15):  'Vaishakha Amavasya',
+    # Vaishakha Krishna (Purnimanta) = Amanta Chaitra Krishna
+    ('Vaishakha', 'Krishna',  8):  'Sita Ashtami',
+    ('Vaishakha', 'Krishna', 15):  'Vaishakha Amavasya',
     # ── Jyeshtha ──────────────────────────────────────────────────────────
     ('Jyeshtha', 'Shukla',  3):  'Shani Jayanti · Vat Savitri Vrat',
     ('Jyeshtha', 'Shukla', 10):  'Ganga Dussehra',
     ('Jyeshtha', 'Shukla', 11):  'Nirjala Ekadashi',
     ('Jyeshtha', 'Shukla', 15):  'Jyeshtha Purnima · Vat Purnima',
+    # Jyeshtha Krishna (Purnimanta) = Amanta Vaishakha Krishna
+    ('Jyeshtha', 'Krishna', 15):  'Jyeshtha Amavasya',
     # ── Ashadha ───────────────────────────────────────────────────────────
     ('Ashadha', 'Shukla',  2):  'Rath Yatra · Jagannath Rath Yatra',
     ('Ashadha', 'Shukla', 11):  'Devshayani Ekadashi · Chaturmas Begins',
     ('Ashadha', 'Shukla', 15):  'Guru Purnima · Ashadha Purnima',
-    ('Ashadha', 'Krishna', 8):  'Kalashtami',
-    ('Ashadha', 'Krishna',15):  'Ashadha Amavasya',
+    # Ashadha Krishna (Purnimanta) = Amanta Jyeshtha Krishna
+    ('Ashadha', 'Krishna', 15):  'Ashadha Amavasya',
     # ── Shravana ──────────────────────────────────────────────────────────
     ('Shravana', 'Shukla',  5):  'Nag Panchami',
     ('Shravana', 'Shukla', 11):  'Putrada Ekadashi',
     ('Shravana', 'Shukla', 15):  'Raksha Bandhan · Shravana Purnima · Avani Avittam',
-    ('Shravana', 'Krishna', 8):  'Janmashtami · Krishna Janmashtami',
-    ('Shravana', 'Krishna',15):  'Shravana Amavasya · Pithru Amavasya',
+    # Shravana Krishna (Purnimanta) = Amanta Ashadha Krishna
+    ('Shravana', 'Krishna',  8):  'Kalashtami',
+    ('Shravana', 'Krishna', 15):  'Shravana Amavasya',
     # ── Bhadrapada ────────────────────────────────────────────────────────
     ('Bhadrapada', 'Shukla',  3):  'Hartalika Teej',
     ('Bhadrapada', 'Shukla',  4):  'Ganesh Chaturthi · Vinayaka Chaturthi',
@@ -119,9 +132,9 @@ _FESTIVALS = {
     ('Bhadrapada', 'Shukla', 12):  'Vaman Jayanti',
     ('Bhadrapada', 'Shukla', 14):  'Anant Chaturdashi · Ganesh Visarjan',
     ('Bhadrapada', 'Shukla', 15):  'Bhadrapada Purnima',
-    ('Bhadrapada', 'Krishna', 1):  'Pitru Paksha Begins',
-    ('Bhadrapada', 'Krishna', 8):  'Janmashtami (some traditions)',
-    ('Bhadrapada', 'Krishna',15):  'Bhadrapada Amavasya · Mahalaya Amavasya · Pitru Paksha Ends',
+    # Bhadrapada Krishna (Purnimanta) = Amanta Shravana Krishna
+    ('Bhadrapada', 'Krishna',  8):  'Janmashtami · Krishna Janmashtami',
+    ('Bhadrapada', 'Krishna', 15):  'Bhadrapada Amavasya · Pithru Amavasya',
     # ── Ashwin ────────────────────────────────────────────────────────────
     ('Ashwin', 'Shukla',  1):  'Sharad Navratri Begins · Ghatasthapana',
     ('Ashwin', 'Shukla',  2):  'Sharad Navratri Day 2',
@@ -135,11 +148,10 @@ _FESTIVALS = {
     ('Ashwin', 'Shukla', 10):  'Dussehra · Vijaya Dashami',
     ('Ashwin', 'Shukla', 11):  'Papankusha Ekadashi',
     ('Ashwin', 'Shukla', 15):  'Sharad Purnima · Kojagara Purnima · Laxmi Puja',
-    ('Ashwin', 'Krishna', 4):  'Karwa Chauth',
-    ('Ashwin', 'Krishna', 8):  'Ahoi Ashtami',
-    ('Ashwin', 'Krishna',13):  'Dhanteras · Dhanvantari Jayanti',
-    ('Ashwin', 'Krishna',14):  'Narak Chaturdashi · Choti Diwali · Hanuman Puja',
-    ('Ashwin', 'Krishna',15):  'Diwali · Lakshmi Puja · Ashwin Amavasya',
+    # Ashwin Krishna (Purnimanta) = Amanta Bhadrapada Krishna = Pitru Paksha
+    ('Ashwin', 'Krishna',  1):  'Pitru Paksha Begins',
+    ('Ashwin', 'Krishna',  8):  'Janmashtami (some traditions)',
+    ('Ashwin', 'Krishna', 15):  'Mahalaya Amavasya · Ashwin Amavasya · Pitru Paksha Ends',
     # ── Kartik ────────────────────────────────────────────────────────────
     ('Kartik', 'Shukla',  1):  'Govardhan Puja · Annakut',
     ('Kartik', 'Shukla',  2):  'Bhai Dooj · Yama Dwithiya',
@@ -148,26 +160,32 @@ _FESTIVALS = {
     ('Kartik', 'Shukla', 11):  'Dev Uthani Ekadashi · Tulsi Vivah · Prabodhini Ekadashi',
     ('Kartik', 'Shukla', 12):  'Tulsi Vivah (alternate)',
     ('Kartik', 'Shukla', 15):  'Kartik Purnima · Dev Diwali · Guru Nanak Jayanti',
-    ('Kartik', 'Krishna',15):  'Kartik Amavasya',
+    # Kartik Krishna (Purnimanta) = Amanta Ashwin Krishna = Diwali week
+    ('Kartik', 'Krishna',  4):  'Karwa Chauth',
+    ('Kartik', 'Krishna',  8):  'Ahoi Ashtami',
+    ('Kartik', 'Krishna', 13):  'Dhanteras · Dhanvantari Jayanti',
+    ('Kartik', 'Krishna', 14):  'Narak Chaturdashi · Choti Diwali · Hanuman Puja',
+    ('Kartik', 'Krishna', 15):  'Diwali · Lakshmi Puja · Kartik Amavasya',
     # ── Margashirsha ──────────────────────────────────────────────────────
     ('Margashirsha', 'Shukla', 11):  'Geeta Jayanti · Mokshada Ekadashi',
     ('Margashirsha', 'Shukla', 15):  'Margashirsha Purnima · Dattatreya Jayanti',
-    ('Margashirsha', 'Krishna',15):  'Margashirsha Amavasya',
+    # Margashirsha Krishna (Purnimanta) = Amanta Kartik Krishna
+    ('Margashirsha', 'Krishna', 15):  'Margashirsha Amavasya',
     # ── Pausha ────────────────────────────────────────────────────────────
     ('Pausha', 'Shukla', 15):  'Pausha Purnima · Shakambhari Purnima',
-    ('Pausha', 'Krishna',15):  'Mauni Amavasya · Pausha Amavasya',
+    # Pausha Krishna (Purnimanta) = Amanta Margashirsha Krishna
+    ('Pausha', 'Krishna', 15):  'Pausha Amavasya',
     # ── Magha ─────────────────────────────────────────────────────────────
     ('Magha', 'Shukla',  5):  'Vasant Panchami · Saraswati Puja',
     ('Magha', 'Shukla', 15):  'Magha Purnima',
-    ('Magha', 'Krishna', 4):  'Sakat Chauth',
-    ('Magha', 'Krishna',13):  'Maha Shivratri (some years)',
-    ('Magha', 'Krishna',15):  'Magha Amavasya',
+    # Magha Krishna (Purnimanta) = Amanta Pausha Krishna
+    ('Magha', 'Krishna',  4):  'Sakat Chauth',
+    ('Magha', 'Krishna', 15):  'Mauni Amavasya · Magha Amavasya',
     # ── Phalguna ──────────────────────────────────────────────────────────
     ('Phalguna', 'Shukla', 15):  'Holi · Holika Dahan · Phalguna Purnima',
-    ('Phalguna', 'Krishna', 4):  'Vinayaka Chaturthi',
-    ('Phalguna', 'Krishna',13):  'Maha Shivratri (some years)',
-    ('Phalguna', 'Krishna',14):  'Maha Shivratri',
-    ('Phalguna', 'Krishna',15):  'Phalguna Amavasya',
+    # Phalguna Krishna (Purnimanta) = Amanta Magha Krishna
+    ('Phalguna', 'Krishna', 14):  'Maha Shivratri',
+    ('Phalguna', 'Krishna', 15):  'Phalguna Amavasya',
 }
 
 
@@ -211,9 +229,20 @@ def _get_masa(jd: float) -> str:
     ay_next_av      = swe.get_ayanamsa_ut(jd_next_av)
     sign_at_next_av = int(((sun_at_next_av - ay_next_av) % 360) / 30)
 
-    # Adhika Masa: Sun stays in same sign for the entire lunar month
-    if sign_at_av == sign_at_next_av:
+    tithi_i_now = int(moon_sun_diff / 12)
+    is_adhika   = (sign_at_av == sign_at_next_av)
+
+    if is_adhika:
+        # Adhika month Shukla paksha → 'Adhika X'
+        # Adhika month Krishna paksha → Purnimanta considers the Nija month started
+        if tithi_i_now >= 15:
+            return _MASA_NAMES[(sign_at_av + 1) % 12]
         return 'Adhika ' + _MASA_NAMES[(sign_at_av + 1) % 12]
+
+    # Purnimanta system (North Indian): during Krishna paksha the month name
+    # is one ahead of the Amanta name — the new month starts at Purnima, not Amavasya.
+    if tithi_i_now >= 15:
+        return _MASA_NAMES[(sign_at_av + 2) % 12]
 
     return _MASA_NAMES[(sign_at_av + 1) % 12]
 
