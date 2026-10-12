@@ -64,9 +64,16 @@ HORA_PLANETS   = ['Sun','Venus','Mercury','Moon','Saturn','Jupiter','Mars']
 HORA_DAY_START = [0, 3, 6, 2, 5, 1, 4]
 
 # Inauspicious kalam slot numbers (1-indexed out of 8 equal day slots, Sun=index 0)
-RAHU_KALAM_SLOT = [4, 2, 7, 5, 6, 3, 8]   # Sun=4, Mon=2, Tue=7, Wed=5, Thu=6, Fri=3, Sat=8
+RAHU_KALAM_SLOT = [8, 2, 7, 5, 6, 3, 4]   # Sun=8(last), Mon=2, Tue=7, Wed=5, Thu=6, Fri=3, Sat=4
 YAMAGANDA_SLOT  = [5, 4, 3, 2, 1, 7, 6]   # Sun=5, Mon=4, Tue=3, Wed=2, Thu=1, Fri=7, Sat=6
 GULIKAI_SLOT    = [7, 6, 5, 4, 3, 2, 1]   # Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, Fri=2, Sat=1
+
+# Slot (1-indexed) within the 8-slot day/night sequence for special periods (weekday: Sun=0..Sat=6)
+# Verified against Drik Panchang Monday Oct 12 2026:
+#   day slot 2 = Kaal Vela, day slot 7 = Vaar Vela, night slot 4 = Kaal Ratri ✓
+KAAL_VELA_SLOT  = [8, 2, 7, 5, 6, 3, 4]
+VAAR_VELA_SLOT  = [3, 7, 4, 2, 1, 5, 8]
+KAAL_RATRI_SLOT = [8, 4, 3, 5, 6, 1, 7]
 
 RITU_NAMES = ['Vasanta','Grishma','Varsha','Sharad','Hemanta','Shishira']
 
@@ -514,11 +521,20 @@ def _choghadiya(jd_start: float, jd_end: float, weekday: int,
         e    = jd_start + (i + 1) * dur
         # Day: forward +1 through Chaldean order; Night: reverse -2 (Drik Panchang standard)
         name = CHOG_NAMES[(start + i) % 7] if day else CHOG_NAMES[(start - 2 * i) % 7]
+        slot_num = i + 1  # 1-indexed
         overlaps = []
         if kalams and day:
             for kname, k in kalams.items():
                 if s < k['jd_end'] and e > k['jd_start']:
                     overlaps.append(kname)
+        if day:
+            if slot_num == KAAL_VELA_SLOT[weekday]:
+                overlaps.append('kaal_vela')
+            if slot_num == VAAR_VELA_SLOT[weekday]:
+                overlaps.append('vaar_vela')
+        else:
+            if slot_num == KAAL_RATRI_SLOT[weekday]:
+                overlaps.append('kaal_ratri')
         slots.append({
             'name':     name,
             'nature':   CHOG_NATURE[name],

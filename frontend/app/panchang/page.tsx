@@ -61,6 +61,27 @@ const OVERLAP_LABEL: Record<string, string> = {
   rahu_kalam: 'Rahu',
   yamaganda:  'Yama',
   gulikai:    'Gulika',
+  kaal_vela:  'Kaal Vela',
+  vaar_vela:  'Vaar Vela',
+  kaal_ratri: 'Kaal Ratri',
+}
+
+const OVERLAP_STYLE: Record<string, string> = {
+  rahu_kalam: 'text-red-400 border-red-500/40 bg-red-500/10',
+  yamaganda:  'text-orange-400 border-orange-500/40 bg-orange-500/10',
+  gulikai:    'text-yellow-500 border-yellow-500/40 bg-yellow-500/10',
+  kaal_vela:  'text-purple-400 border-purple-500/40 bg-purple-500/10',
+  vaar_vela:  'text-indigo-400 border-indigo-500/40 bg-indigo-500/10',
+  kaal_ratri: 'text-rose-500 border-rose-600/40 bg-rose-600/10',
+}
+
+const OVERLAP_TITLE: Record<string, string> = {
+  rahu_kalam: 'Rahu Kalam — Ruled by Rahu; inauspicious for new ventures',
+  yamaganda:  'Yamaganda Kalam — Ruled by Saturn; inauspicious period',
+  gulikai:    'Gulikai Kalam — Ruled by Saturn\'s son; inauspicious period',
+  kaal_vela:  'Kaal Vela — Inauspicious daytime period for this weekday',
+  vaar_vela:  'Vaar Vela — Weekday-specific inauspicious period',
+  kaal_ratri: 'Kaal Ratri — Inauspicious night period for this weekday',
 }
 const TODAY = new Date().toISOString().slice(0, 10)
 
@@ -429,7 +450,8 @@ export default function PanchangPage() {
               <div className="space-y-4">
                 <div className="bg-deepblue-900/60 border border-saffron-700/20 rounded-xl p-3 text-xs text-gray-400">
                   <span className="font-medium text-saffron-400">{p.tabs.choghadiya}</span> {p.choghadiyaInfo}
-                  <span className="text-red-400 ml-1">⊗ Rahu</span> / <span className="text-orange-400">⊗ Yama</span> / <span className="text-yellow-500">⊗ Gulika</span>
+                  <span className="text-red-400 ml-1">⊗ Rahu</span> / <span className="text-orange-400">⊗ Yama</span> / <span className="text-yellow-500">⊗ Gulika</span>{' '}
+                  / <span className="text-purple-400">⊗ Kaal Vela</span> / <span className="text-indigo-400">⊗ Vaar Vela</span> / <span className="text-rose-500">⊗ Kaal Ratri</span>
                 </div>
                 {(['day', 'night'] as const).map(period => (
                   <div key={period} className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
@@ -456,16 +478,10 @@ export default function PanchangPage() {
                             {slot.overlaps?.map(k => (
                               <span
                                 key={k}
-                                title={`This slot overlaps with ${k === 'rahu_kalam' ? 'Rahu Kalam' : k === 'yamaganda' ? 'Yamaganda Kalam' : 'Gulikai Kalam'} — even good Choghadiya is weakened`}
-                                className={`text-xs font-bold px-1.5 py-0.5 rounded border ${
-                                  k === 'rahu_kalam'
-                                    ? 'text-red-400 border-red-500/40 bg-red-500/10'
-                                    : k === 'yamaganda'
-                                    ? 'text-orange-400 border-orange-500/40 bg-orange-500/10'
-                                    : 'text-yellow-500 border-yellow-500/40 bg-yellow-500/10'
-                                }`}
+                                title={OVERLAP_TITLE[k] ?? k}
+                                className={`text-xs font-bold px-1.5 py-0.5 rounded border ${OVERLAP_STYLE[k] ?? 'text-gray-400 border-gray-500/40'}`}
                               >
-                                ⊗ {OVERLAP_LABEL[k]}
+                                ⊗ {OVERLAP_LABEL[k] ?? k}
                               </span>
                             ))}
                           </div>
