@@ -192,6 +192,17 @@ export default function PanchangPage() {
     setCalLoading(false)
   }
 
+  const navigateCalendar = (delta: number) => {
+    if (!location) return
+    let m = calMonth + delta
+    let y = calYear
+    if (m < 1) { m = 12; y -= 1 }
+    if (m > 12) { m = 1; y += 1 }
+    setCalMonth(m)
+    setCalYear(y)
+    fetchCalendar(location, y, m)
+  }
+
   const fetchMuhurta = async () => {
     if (!location) return
     setMuhurtaLoading(true)
@@ -578,13 +589,27 @@ export default function PanchangPage() {
             {activeTab === 'calendar' && (
               <div className="space-y-4">
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-4">
-                  <div className="flex items-center gap-3 mb-4 flex-wrap">
-                    <select value={calMonth} onChange={e => setCalMonth(Number(e.target.value))} className="bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
-                      {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) => <option key={i} value={i+1}>{m}</option>)}
-                    </select>
-                    <input type="number" value={calYear} onChange={e => setCalYear(Number(e.target.value))} className="w-24 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                  <div className="flex items-center gap-2 mb-4 flex-wrap">
+                    <button
+                      onClick={() => navigateCalendar(-1)}
+                      disabled={calLoading || !location}
+                      className="w-9 h-9 flex items-center justify-center bg-deepblue-800 border border-saffron-700/30 hover:border-gold-400 text-saffron-400 hover:text-gold-400 rounded-lg text-lg transition disabled:opacity-40"
+                      title="Previous month"
+                    >‹</button>
+                    <div className="flex items-center gap-2 flex-1 min-w-[200px]">
+                      <select value={calMonth} onChange={e => setCalMonth(Number(e.target.value))} className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
+                        {['January','February','March','April','May','June','July','August','September','October','November','December'].map((m,i) => <option key={i} value={i+1}>{m}</option>)}
+                      </select>
+                      <input type="number" value={calYear} onChange={e => setCalYear(Number(e.target.value))} className="w-24 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                    </div>
+                    <button
+                      onClick={() => navigateCalendar(1)}
+                      disabled={calLoading || !location}
+                      className="w-9 h-9 flex items-center justify-center bg-deepblue-800 border border-saffron-700/30 hover:border-gold-400 text-saffron-400 hover:text-gold-400 rounded-lg text-lg transition disabled:opacity-40"
+                      title="Next month"
+                    >›</button>
                     <button onClick={() => location && fetchCalendar(location, calYear, calMonth)} disabled={calLoading || !location} className="px-4 py-2 bg-saffron-700/20 border border-saffron-600/40 text-saffron-400 hover:text-gold-400 rounded-lg text-sm transition disabled:opacity-50">
-                      {calLoading ? 'Loading...' : 'View Month'}
+                      {calLoading ? 'Loading...' : 'Go'}
                     </button>
                   </div>
                   {calData.length > 0 && (
