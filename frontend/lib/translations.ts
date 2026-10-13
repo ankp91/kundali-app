@@ -132,6 +132,7 @@ The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of i
       partial: 'Partial',
       yearsRemaining: 'Years Remaining',
       description: 'Check for Mangal Dosha, Kal Sarpa Dosha, and Shani Sade Sati based on your natal chart.',
+      tabLabel: 'Doshas',
     },
     match: {
       title: 'Kundali Milan', subtitle: 'Ashtakoot compatibility matching — 36-point Vedic system',
@@ -335,6 +336,7 @@ The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of i
       partial: 'आंशिक',
       yearsRemaining: 'शेष वर्ष',
       description: 'अपनी जन्म कुंडली के आधार पर मंगल दोष, काल सर्प दोष और शनि साढ़े साती की जाँच करें।',
+      tabLabel: 'दोष',
     },
     match: {
       title: 'कुंडली मिलान', subtitle: 'अष्टकूट गुण मिलान — 36 अंकों की वैदिक प्रणाली',

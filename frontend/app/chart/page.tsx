@@ -168,6 +168,7 @@ export default function ChartPage() {
     { key: 'interpret', label: t.chart.interpret },
     { key: 'chat', label: t.chart.chat },
     { key: 'dasha', label: t.chart.dasha },
+    { key: 'doshas', label: t.doshas.tabLabel },
     { key: 'divisionals', label: 'Divisionals' },
     { key: 'yogas', label: 'Yogas' },
     { key: 'transits', label: 'Transits' },
@@ -175,7 +176,6 @@ export default function ChartPage() {
     { key: 'remedies', label: 'Remedies' },
     { key: 'shadbala', label: 'Shadbala' },
     { key: 'transit-calendar', label: 'Transit Cal' },
-    { key: 'doshas', label: t.doshas.title },
   ] as const
 
   return (
