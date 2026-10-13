@@ -118,6 +118,10 @@ The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of i
       varaAvoidNote: 'Day inauspicious (Tue/Sat)',
       tithiAvoidNote: 'Tithi inauspicious',
       calcNote: 'Nights 1–3 are forbidden (ritually impure). Even nights → Son. Odd nights → Daughter. Source: Charaka Samhita.',
+      todayGuideTitle: "Tonight's Garbhadhana Assessment",
+      enterLocPrompt: "Enter your location to see tonight's Nakshatra, Tithi and Kaal Ratri.",
+      overallTonight: 'Overall for Tonight',
+      noKaalRatri: 'No Kaal Ratri tonight — whole night is clear',
     },
     doshas: {
       title: 'Dosha Analysis',
@@ -322,6 +326,10 @@ The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of i
       varaAvoidNote: 'वार अशुभ (मंगल/शनि)',
       tithiAvoidNote: 'तिथि अशुभ',
       calcNote: 'रात 1–3 वर्जित हैं (धार्मिक रूप से अशुद्ध)। सम रातें → पुत्र। विषम रातें → पुत्री। स्रोत: चरक संहिता।',
+      todayGuideTitle: 'आज रात के लिए गर्भाधान मूल्यांकन',
+      enterLocPrompt: 'आज रात के नक्षत्र, तिथि और काल रात्रि आकलन के लिए अपना स्थान दर्ज करें।',
+      overallTonight: 'आज रात का समग्र आकलन',
+      noKaalRatri: 'आज रात काल रात्रि नहीं — पूरी रात शुद्ध है',
     },
     doshas: {
       title: 'दोष विश्लेषण',

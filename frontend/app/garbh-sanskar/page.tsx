@@ -82,6 +82,34 @@ const NAK_COLOR: Record<string, string> = {
   avoid:      'text-red-300 bg-red-900/30 border-red-700/30',
 }
 
+interface TodayPanchangData {
+  nakshatra: { name: string; name_hi: string; pada: number; end_time: string }
+  tithi: { name: string; number: number; paksha: string }
+  vara: { name: string; name_hi: string }
+  choghadiya: { night: Array<{ name: string; start: string; end: string; overlaps: string[] }> }
+}
+
+function classifyNak(name: string): 'best' | 'good' | 'acceptable' | 'avoid' {
+  const base = name.split('(')[0].trim()
+  if (BEST_NAKS.some(n => n === base || base.startsWith(n))) return 'best'
+  if (GOOD_NAKS.some(n => base.startsWith(n.split('(')[0].trim()))) return 'good'
+  if (AVOID_NAKS.some(n => n === base || base.startsWith(n))) return 'avoid'
+  return 'acceptable'
+}
+
+const TITHI_AVOID_SET = new Set([1, 4, 6, 8, 9, 12, 14, 15, 30])
+
+function overallRating(
+  nak: 'best' | 'good' | 'acceptable' | 'avoid',
+  tithiAvoid: boolean,
+  varaAvoid: boolean
+): 'best' | 'good' | 'acceptable' | 'avoid' {
+  if (nak === 'avoid' || varaAvoid || tithiAvoid) return 'avoid'
+  if (nak === 'best') return 'best'
+  if (nak === 'good') return 'good'
+  return 'acceptable'
+}
+
 export default function GarbhSanskarPage() {
   const { t, lang } = useLanguage()
   const p = t.garbhSanskar
@@ -95,6 +123,43 @@ export default function GarbhSanskarPage() {
   const [calcLoading, setCalcLoading] = useState(false)
   const [calcError, setCalcError] = useState('')
   const [geoLoading, setGeoLoading] = useState(false)
+
+  // Today's Guide state
+  const [todayLocQuery, setTodayLocQuery] = useState('')
+  const [todayGeoResult, setTodayGeoResult] = useState<{ lat: number; lon: number; tz: string; name: string } | null>(null)
+  const [todayData, setTodayData] = useState<TodayPanchangData | null>(null)
+  const [todayLoading, setTodayLoading] = useState(false)
+  const [todayGeoLoading, setTodayGeoLoading] = useState(false)
+  const [todayError, setTodayError] = useState('')
+
+  const fetchTodayPanchang = async (lat: number, lon: number, tz: string) => {
+    setTodayLoading(true)
+    setTodayError('')
+    try {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await axios.get(`/api/panchang?lat=${lat}&lon=${lon}&tz=${encodeURIComponent(tz)}&date=${today}`)
+      setTodayData(data)
+    } catch {
+      setTodayError('Failed to fetch panchang data.')
+    } finally {
+      setTodayLoading(false)
+    }
+  }
+
+  const searchTodayLocation = async () => {
+    if (!todayLocQuery.trim()) return
+    setTodayGeoLoading(true)
+    setTodayError('')
+    try {
+      const { data } = await axios.get(`/api/geocode?q=${encodeURIComponent(todayLocQuery)}`)
+      setTodayGeoResult({ lat: data.lat, lon: data.lon, tz: data.tz, name: data.name })
+      await fetchTodayPanchang(data.lat, data.lon, data.tz)
+    } catch {
+      setTodayError('Location not found. Try "Mumbai, India".')
+    } finally {
+      setTodayGeoLoading(false)
+    }
+  }
 
   const searchLocation = async () => {
     if (!locationQuery.trim()) return
@@ -178,12 +243,110 @@ export default function GarbhSanskarPage() {
       )}
 
       {tab === 'today' && (
-        <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-8 text-center">
-          <div className="text-4xl mb-4">🌸</div>
-          <p className="text-gray-400">{p.todayPlaceholder}</p>
-          <a href="/panchang" className="inline-block mt-4 text-saffron-400 hover:text-gold-400 text-sm transition">
-            → Open Daily Panchang
-          </a>
+        <div className="space-y-5">
+          <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-5">
+            <h2 className="text-gold-400 font-bold text-lg mb-1">{p.todayGuideTitle}</h2>
+            <p className="text-gray-400 text-sm mb-4">{p.enterLocPrompt}</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={todayLocQuery}
+                onChange={e => setTodayLocQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && searchTodayLocation()}
+                placeholder={p.locationPlaceholder}
+                className="flex-1 bg-[#060d2e] border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400 placeholder-gray-600"
+              />
+              <button
+                onClick={searchTodayLocation}
+                disabled={todayGeoLoading || todayLoading}
+                className="px-4 py-2 bg-saffron-600 hover:bg-saffron-700 text-white rounded-lg text-sm font-medium transition disabled:opacity-50"
+              >
+                {todayGeoLoading || todayLoading ? '…' : p.calcBtn}
+              </button>
+            </div>
+            {todayGeoResult && <p className="text-green-400 text-xs mt-2">✓ {todayGeoResult.name}</p>}
+            {todayError && <p className="text-red-400 text-sm mt-2">{todayError}</p>}
+          </div>
+
+          {todayData && (() => {
+            const nakName = todayData.nakshatra.name
+            const nakRat = classifyNak(nakName)
+            const tithiAvoid = TITHI_AVOID_SET.has(todayData.tithi.number)
+            const varaAvoid = todayData.vara.name === 'Tuesday' || todayData.vara.name === 'Saturday'
+            const overall = overallRating(nakRat, tithiAvoid, varaAvoid)
+            const kaalRatriSlots = todayData.choghadiya.night.filter(s => s.overlaps.includes('kaal_ratri'))
+
+            return (
+              <div className="space-y-3">
+                <div className={`border rounded-xl p-4 ${RATING_STYLE[overall]}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-300 font-medium">{p.overallTonight}</span>
+                    <span className={`text-sm font-bold px-3 py-1 rounded-full border ${
+                      overall === 'best' ? 'text-yellow-300 border-yellow-600/50 bg-yellow-900/20' :
+                      overall === 'good' ? 'text-green-300 border-green-600/50 bg-green-900/20' :
+                      overall === 'avoid' ? 'text-red-300 border-red-600/50 bg-red-900/20' :
+                      'text-gray-300 border-gray-600/50 bg-gray-900/20'
+                    }`}>
+                      {p[RATING_LABEL_KEY[overall]]}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl divide-y divide-saffron-700/10">
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <span className="text-gray-400 text-xs block">{p.nakLabel}</span>
+                      <span className={`text-sm font-medium px-2 py-0.5 rounded-full border inline-block mt-0.5 ${NAK_COLOR[nakRat]}`}>
+                        {lang === 'hi' ? todayData.nakshatra.name_hi : nakName} (Pada {todayData.nakshatra.pada})
+                      </span>
+                    </div>
+                    <span className={`text-xs font-bold ${
+                      nakRat === 'best' ? 'text-yellow-400' :
+                      nakRat === 'good' ? 'text-green-400' :
+                      nakRat === 'avoid' ? 'text-red-400' : 'text-gray-400'
+                    }`}>{p[RATING_LABEL_KEY[nakRat]]}</span>
+                  </div>
+
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <span className="text-gray-400 text-xs block">{p.tithiLabel}</span>
+                      <span className="text-gray-200 text-sm">{todayData.tithi.paksha} {todayData.tithi.name}</span>
+                    </div>
+                    {tithiAvoid
+                      ? <span className="text-red-400 text-xs font-medium">⚠ {p.tithiAvoidNote}</span>
+                      : <span className="text-green-400 text-xs font-medium">✓</span>
+                    }
+                  </div>
+
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <span className="text-gray-400 text-xs block">{p.varaLabel}</span>
+                      <span className="text-gray-200 text-sm">{lang === 'hi' ? todayData.vara.name_hi : todayData.vara.name}</span>
+                    </div>
+                    {varaAvoid
+                      ? <span className="text-red-400 text-xs font-medium">⚠ {p.varaAvoidNote}</span>
+                      : <span className="text-green-400 text-xs font-medium">✓</span>
+                    }
+                  </div>
+                </div>
+
+                {kaalRatriSlots.length > 0 ? (
+                  <div className="bg-rose-900/20 border border-rose-700/30 rounded-xl px-4 py-3">
+                    <span className="text-rose-400 text-sm font-medium block mb-1">{p.kaalRatriWarn}</span>
+                    {kaalRatriSlots.map((s, i) => (
+                      <span key={i} className="text-rose-300 text-sm">{s.start} – {s.end}</span>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-green-900/10 border border-green-700/20 rounded-xl px-4 py-3">
+                    <span className="text-green-400 text-sm">✓ {p.noKaalRatri}</span>
+                  </div>
+                )}
+
+                <p className="text-gray-600 text-xs italic">⚠ {p.disclaimer}</p>
+              </div>
+            )
+          })()}
         </div>
       )}
 
