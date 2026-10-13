@@ -32,6 +32,16 @@ interface DoshaResult {
   sade_sati: { active: boolean; phase: string; natal_moon_sign: string; current_saturn_sign: string; years_remaining: string; small_panoti: boolean; small_panoti_type: string }
 }
 
+interface SaturnEvent {
+  type: string
+  phase: string
+  sign: string
+  start: string
+  end: string
+  is_current: boolean
+  intensity: 'high' | 'medium'
+}
+
 export default function ChartPage() {
   const router = useRouter()
   const [chart, setChart] = useState<Record<string, unknown> | null>(null)
@@ -45,6 +55,8 @@ export default function ChartPage() {
   const [selectedDasha, setSelectedDasha] = useState<number | null>(null)
   const [doshaData, setDoshaData] = useState<DoshaResult | null>(null)
   const [doshaLoading, setDoshaLoading] = useState(false)
+  const [saturnEvents, setSaturnEvents] = useState<SaturnEvent[] | null>(null)
+  const [timelineLoading, setTimelineLoading] = useState(false)
   const { t } = useLanguage()
 
   useEffect(() => {
@@ -159,8 +171,26 @@ export default function ChartPage() {
       })
       const data = await res.json()
       setDoshaData(data)
+      // Auto-fetch Saturn timeline using natal Moon sign
+      const moonSign = (chart.planets as Record<string, { sign: string }>)?.Moon?.sign
+      if (moonSign) fetchSaturnTimeline(moonSign)
     } finally {
       setDoshaLoading(false)
+    }
+  }
+
+  const fetchSaturnTimeline = async (moonSign: string) => {
+    setTimelineLoading(true)
+    try {
+      const res = await fetch('/api/saturn-timeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ natal_moon_sign: moonSign }),
+      })
+      const data = await res.json()
+      setSaturnEvents(data.events)
+    } finally {
+      setTimelineLoading(false)
     }
   }
 
@@ -455,11 +485,70 @@ export default function ChartPage() {
                   </div>
 
                   <button
-                    onClick={() => setDoshaData(null)}
+                    onClick={() => { setDoshaData(null); setSaturnEvents(null) }}
                     className="text-saffron-400 hover:text-gold-400 text-sm transition"
                   >
                     ↺ Recheck
                   </button>
+                </div>
+              )}
+
+              {/* Saturn Transit Timeline */}
+              {(saturnEvents || timelineLoading) && (
+                <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-4">
+                  <h3 className="text-gold-400 font-semibold mb-1 text-sm">Saturn Transit Forecast</h3>
+                  <p className="text-gray-500 text-xs mb-4">Sade Sati · Dhaiya · Ashtam Shani — next 35 years</p>
+                  {timelineLoading ? (
+                    <p className="text-saffron-400 text-sm animate-pulse">Calculating Saturn transits…</p>
+                  ) : saturnEvents && saturnEvents.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No major Saturn afflictions in the next 35 years.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {saturnEvents!.map((ev, i) => (
+                        <div
+                          key={i}
+                          className={`flex items-start gap-3 rounded-lg px-3 py-2.5 border ${
+                            ev.is_current
+                              ? ev.intensity === 'high'
+                                ? 'border-red-600/50 bg-red-900/20'
+                                : 'border-orange-600/50 bg-orange-900/20'
+                              : 'border-gray-700/30 bg-gray-900/10'
+                          }`}
+                        >
+                          <div className="flex-shrink-0 mt-0.5">
+                            {ev.is_current ? (
+                              <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-red-700/40 text-red-300 border border-red-600/40">NOW</span>
+                            ) : (
+                              <span className="text-xs text-gray-600">—</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className={`text-sm font-semibold ${
+                                ev.intensity === 'high' ? 'text-red-300' : 'text-orange-300'
+                              }`}>{ev.type}</span>
+                              <span className={`text-xs px-1.5 py-0.5 rounded-full border ${
+                                ev.phase === 'Peak' ? 'text-red-300 border-red-600/40 bg-red-900/20' :
+                                ev.phase === 'Rising' ? 'text-orange-300 border-orange-600/40 bg-orange-900/20' :
+                                ev.phase === 'Setting' ? 'text-yellow-300 border-yellow-600/40 bg-yellow-900/20' :
+                                'text-gray-300 border-gray-600/40 bg-gray-900/20'
+                              }`}>{ev.phase}</span>
+                              <span className="text-gray-500 text-xs">Saturn in {ev.sign}</span>
+                            </div>
+                            <div className="text-gray-500 text-xs mt-0.5">{ev.start} → {ev.end}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="mt-3 pt-3 border-t border-saffron-700/10">
+                    <p className="text-gray-600 text-xs">
+                      <span className="text-red-400">Sade Sati Peak</span>: Saturn on natal Moon sign (most intense) ·
+                      <span className="text-orange-400"> Rising/Setting</span>: adjacent signs ·
+                      <span className="text-orange-300"> Dhaiya</span>: 4th from Moon ·
+                      <span className="text-orange-300"> Ashtam</span>: 8th from Moon
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

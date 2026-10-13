@@ -488,6 +488,111 @@ def check_dosha(req: DoshaRequest):
     }
 
 
+# ── Saturn Transit Timeline ────────────────────────────────────────────────────
+
+class SaturnTimelineRequest(BaseModel):
+    natal_moon_sign: str
+    years_ahead: int = 35
+
+@app.post("/api/saturn-timeline")
+def saturn_timeline(req: SaturnTimelineRequest):
+    import swisseph as swe, time as _time
+    from datetime import datetime, timezone
+
+    swe.set_sid_mode(swe.SIDM_LAHIRI)
+
+    moon_idx = _SIGNS.index(req.natal_moon_sign) if req.natal_moon_sign in _SIGNS else 0
+    # Sade Sati spans 3 consecutive signs (before, on, after Moon sign)
+    ss_signs = {(moon_idx - 1) % 12, moon_idx, (moon_idx + 1) % 12}
+    phase_name = {
+        (moon_idx - 1) % 12: "Rising",
+        moon_idx: "Peak",
+        (moon_idx + 1) % 12: "Setting",
+    }
+    ardha_sign  = (moon_idx + 3) % 12   # 4th from Moon
+    ashtam_sign = (moon_idx + 7) % 12   # 8th from Moon
+
+    def jd_to_date(jd: float) -> str:
+        try:
+            y, m, d, _ = swe.revjul(jd)
+            return f"{int(y)}-{int(m):02d}-{int(d):02d}"
+        except Exception:
+            return "?"
+
+    def saturn_sign_at(jd: float) -> int:
+        try:
+            lon = swe.calc_ut(jd, swe.SATURN, swe.FLG_SIDEREAL | swe.FLG_SWIEPH)[0][0]
+            return int(lon / 30) % 12
+        except Exception:
+            return 0
+
+    # Find ingress dates: scan 35 years ahead in 5-day steps
+    now_jd = swe.julday(*_time.gmtime()[:6])
+    end_jd  = now_jd + req.years_ahead * 365.25
+
+    ingresses = []   # list of (sign_idx, ingress_jd)
+    prev_sign = saturn_sign_at(now_jd)
+    ingresses.append((prev_sign, now_jd))   # start with current sign/date
+
+    jd = now_jd + 5
+    while jd < end_jd:
+        curr_sign = saturn_sign_at(jd)
+        if curr_sign != prev_sign:
+            # Binary search for exact ingress within ±5 days
+            lo, hi = jd - 5, jd
+            for _ in range(22):
+                mid = (lo + hi) / 2
+                if saturn_sign_at(mid) == prev_sign:
+                    lo = mid
+                else:
+                    hi = mid
+            ingresses.append((curr_sign, (lo + hi) / 2))
+            prev_sign = curr_sign
+        jd += 5
+
+    # Build timeline events from ingresses
+    events = []
+    for i, (sign_idx, entry_jd) in enumerate(ingresses):
+        exit_jd = ingresses[i + 1][1] if i + 1 < len(ingresses) else end_jd
+
+        if sign_idx in ss_signs:
+            events.append({
+                "type": "Sade Sati",
+                "phase": phase_name[sign_idx],
+                "sign": _SIGNS[sign_idx],
+                "start": jd_to_date(entry_jd),
+                "end":   jd_to_date(exit_jd),
+                "is_current": entry_jd <= now_jd < exit_jd,
+                "intensity": "high" if sign_idx == moon_idx else "medium",
+            })
+        elif sign_idx == ardha_sign:
+            events.append({
+                "type": "Ardha Shani (Dhaiya)",
+                "phase": "Ardha Panoti",
+                "sign": _SIGNS[sign_idx],
+                "start": jd_to_date(entry_jd),
+                "end":   jd_to_date(exit_jd),
+                "is_current": entry_jd <= now_jd < exit_jd,
+                "intensity": "medium",
+            })
+        elif sign_idx == ashtam_sign:
+            events.append({
+                "type": "Ashtam Shani",
+                "phase": "Ashtam Panoti",
+                "sign": _SIGNS[sign_idx],
+                "start": jd_to_date(entry_jd),
+                "end":   jd_to_date(exit_jd),
+                "is_current": entry_jd <= now_jd < exit_jd,
+                "intensity": "medium",
+            })
+
+    return {
+        "natal_moon_sign": req.natal_moon_sign,
+        "events": events,
+        "current_saturn_sign": _SIGNS[saturn_sign_at(now_jd)],
+    }
+
+
 # ── Baby Names by Nakshatra ───────────────────────────────────────────────────
 
 _NAKSHATRA_DATA = [
