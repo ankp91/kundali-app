@@ -1,4 +1,4 @@
-# v2 — saturn-timeline, garbhadhana-window, baby-names, dosha endpoints
+# v3 — fix swe.julday arg count in dosha + saturn-timeline endpoints
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -441,7 +441,9 @@ def check_dosha(req: DoshaRequest):
     # ── Sade Sati ─────────────────────────────────────────────────────────────
     try:
         swe.set_sid_mode(swe.SIDM_LAHIRI)
-        now_jd = swe.julday(*_time.gmtime()[:6])
+        _gt = _time.gmtime()
+        now_jd = swe.julday(_gt.tm_year, _gt.tm_mon, _gt.tm_mday,
+                            _gt.tm_hour + _gt.tm_min / 60 + _gt.tm_sec / 3600)
         sat_lon = swe.calc_ut(now_jd, swe.SATURN, swe.FLG_SIDEREAL | swe.FLG_SWIEPH)[0][0]
         current_sat_idx = int(sat_lon / 30) % 12
     except Exception:
@@ -528,7 +530,9 @@ def saturn_timeline(req: SaturnTimelineRequest):
             return 0
 
     # Find ingress dates: scan 35 years ahead in 5-day steps
-    now_jd = swe.julday(*_time.gmtime()[:6])
+    _gt = _time.gmtime()
+    now_jd = swe.julday(_gt.tm_year, _gt.tm_mon, _gt.tm_mday,
+                        _gt.tm_hour + _gt.tm_min / 60 + _gt.tm_sec / 3600)
     end_jd  = now_jd + req.years_ahead * 365.25
 
     ingresses = []   # list of (sign_idx, ingress_jd)

@@ -55,6 +55,7 @@ export default function ChartPage() {
   const [selectedDasha, setSelectedDasha] = useState<number | null>(null)
   const [doshaData, setDoshaData] = useState<DoshaResult | null>(null)
   const [doshaLoading, setDoshaLoading] = useState(false)
+  const [doshaError, setDoshaError] = useState<string | null>(null)
   const [saturnEvents, setSaturnEvents] = useState<SaturnEvent[] | null>(null)
   const [timelineLoading, setTimelineLoading] = useState(false)
   const { t } = useLanguage()
@@ -163,17 +164,23 @@ export default function ChartPage() {
   const checkDoshas = async () => {
     if (!chart) return
     setDoshaLoading(true)
+    setDoshaError(null)
     try {
       const res = await fetch('/api/dosha', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ planets: chart.planets, ascendant: chart.ascendant }),
       })
+      if (!res.ok) {
+        const err = await res.text()
+        throw new Error(`Server error ${res.status}: ${err.slice(0, 120)}`)
+      }
       const data = await res.json()
       setDoshaData(data)
-      // Auto-fetch Saturn timeline using natal Moon sign
       const moonSign = (chart.planets as Record<string, { sign: string }>)?.Moon?.sign
       if (moonSign) fetchSaturnTimeline(moonSign)
+    } catch (e) {
+      setDoshaError(e instanceof Error ? e.message : 'Failed to check doshas.')
     } finally {
       setDoshaLoading(false)
     }
@@ -434,6 +441,9 @@ export default function ChartPage() {
                   >
                     {doshaLoading ? t.doshas.loading : t.doshas.checkBtn}
                   </button>
+                )}
+                {doshaError && (
+                  <p className="text-red-400 text-sm mt-3">{doshaError}</p>
                 )}
               </div>
 
