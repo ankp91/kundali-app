@@ -363,7 +363,7 @@ export default function GarbhSanskarPage() {
                   type="date"
                   value={mensesDate}
                   onChange={e => setMensesDate(e.target.value)}
-                  className="w-full bg-[#060d2e] border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400"
+                  className="w-full bg-[#060d2e] border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400 [color-scheme:dark]"
                 />
               </div>
               <div>

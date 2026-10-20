@@ -55,7 +55,7 @@ export default function BirthForm({ onChart, initialValues }: Props) {
               required
               value={form[f.key as keyof typeof form]}
               onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-              className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-4 py-2 text-white focus:border-gold-400 focus:outline-none"
+              className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-4 py-2 text-white focus:border-gold-400 focus:outline-none [color-scheme:dark]"
             />
           </div>
         ))}
