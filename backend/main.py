@@ -1,4 +1,4 @@
-# v3 — fix swe.julday arg count in dosha + saturn-timeline endpoints
+# v4 — fix KAAL_RATRI_SLOT for all 7 weekdays (Kaal Ratri = night Labha slot)
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse

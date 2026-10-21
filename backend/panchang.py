@@ -71,9 +71,13 @@ GULIKAI_SLOT    = [7, 6, 5, 4, 3, 2, 1]   # Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, F
 # Slot (1-indexed) within the 8-slot day/night sequence for special periods (weekday: Sun=0..Sat=6)
 # Verified against Drik Panchang Monday Oct 12 2026:
 #   day slot 2 = Kaal Vela, day slot 7 = Vaar Vela, night slot 4 = Kaal Ratri ✓
+# Kaal Ratri = the night slot where "Labha" choghadiya falls. Derived from NIGHT_CHOG_START:
+#   for each weekday, solve (start - 2*i) % 7 == 6 (Labha index), giving slot = i+1
+#   Sun=6, Mon=4, Tue=2, Wed=7, Thu=5, Fri=3, Sat=1
+#   Wed corrected from 5→7 (Oct 2026, verified against Drik Panchang)
 KAAL_VELA_SLOT  = [8, 2, 7, 5, 6, 3, 4]
 VAAR_VELA_SLOT  = [3, 7, 4, 2, 1, 5, 8]
-KAAL_RATRI_SLOT = [8, 4, 3, 5, 6, 1, 7]
+KAAL_RATRI_SLOT = [6, 4, 2, 7, 5, 3, 1]
 
 RITU_NAMES = ['Vasanta','Grishma','Varsha','Sharad','Hemanta','Shishira']
 
