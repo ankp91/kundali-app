@@ -2,7 +2,29 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Light (parchment) mode — default ───────────────────────── */
+:root {
+  --bg-base:        253 246 227;   /* #fdf6e3 warm cream */
+  --bg-card:        245 234 208;   /* #f5ead0 parchment */
+  --bg-card-raised: 237 224 192;   /* #ede0c0 aged paper */
+  --text-subtle:    41 37 36;      /* #292524 stone-800 */
+  --text-muted:     68 64 60;      /* #44403c stone-700 */
+  --accent-gold:    146 97 10;     /* #92610a deep amber */
+  --accent-saffron: 194 65 12;     /* #c2410c deep orange */
+}
+
+/* ── Dark (cosmic) mode ─────────────────────────────────────── */
+.dark {
+  --bg-base:        6 13 46;       /* #060d2e deep blue */
+  --bg-card:        12 20 69;      /* #0c1445 */
+  --bg-card-raised: 14 24 80;      /* #0e1850 */
+  --text-subtle:    229 231 235;   /* #e5e7eb gray-200 */
+  --text-muted:     209 213 219;   /* #d1d5db gray-300 */
+  --accent-gold:    251 191 36;    /* #fbbf24 gold */
+  --accent-saffron: 251 146 60;    /* #fb923c saffron */
+}
+
 body {
-  background: #060d2e;
-  color: #f5f0e8;
+  background: rgb(var(--bg-base));
+  color: rgb(var(--text-subtle));
 }

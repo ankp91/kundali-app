@@ -1,8 +1,10 @@
 'use client'
 import { useLanguage } from './LanguageProvider'
+import { useTheme } from './ThemeProvider'
 
 export default function NavBar() {
   const { t, lang, toggle } = useLanguage()
+  const { isDark, toggleTheme } = useTheme()
   return (
     <nav className="border-b border-saffron-700/30 bg-deepblue-900/80 backdrop-blur sticky top-0 z-50">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center flex-wrap gap-x-4 sm:gap-x-6 gap-y-2">
@@ -15,7 +17,14 @@ export default function NavBar() {
         <a href="/prasna" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.prasna}</a>
         <a href="/baby-names" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.babyNames}</a>
         <a href="/garbh-sanskar" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.garbhSanskar}</a>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="text-sm px-2.5 py-1.5 rounded-full border border-saffron-700/50 hover:border-gold-400 transition"
+          >
+            {isDark ? '☀️' : '🌙'}
+          </button>
           <button
             onClick={toggle}
             className="text-xs font-bold px-3 py-1.5 rounded-full border border-saffron-700/50 hover:border-gold-400 transition"
