@@ -5,6 +5,17 @@ import BirthForm from '@/components/BirthForm'
 import UploadForm from '@/components/UploadForm'
 import { useLanguage } from '@/components/LanguageProvider'
 
+const FEATURE_CARDS = [
+  { icon: '📅', href: '/panchang' },
+  { icon: '💑', href: '/match' },
+  { icon: '🤰', href: '/garbh-sanskar' },
+  { icon: '🙏', href: '/samskara' },
+  { icon: '👶', href: '/baby-names' },
+  { icon: '🔮', href: '/varshaphal' },
+  { icon: '❓', href: '/prasna' },
+  { icon: '📚', href: '/learn' },
+]
+
 interface InitialFormValues {
   name?: string
   birth_date?: string
@@ -89,16 +100,35 @@ function HomeContent() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Feature pills */}
+      <div className="flex flex-wrap justify-center gap-3 mb-12">
         {[
           { icon: '🏠', idx: 0 }, { icon: '🪐', idx: 1 },
           { icon: '⭐', idx: 2 }, { icon: '⏳', idx: 3 },
         ].map(f => (
-          <div key={f.idx} className="bg-deepblue-900/50 border border-saffron-700/20 rounded-xl p-4 text-center">
-            <div className="text-2xl mb-1">{f.icon}</div>
-            <div className="text-gray-400 text-xs">{t.home.features[f.idx]}</div>
+          <div key={f.idx} className="bg-deepblue-900/50 border border-saffron-700/20 rounded-full px-4 py-1.5 flex items-center gap-2">
+            <span className="text-base">{f.icon}</span>
+            <span className="text-gray-300 text-xs">{t.home.features[f.idx]}</span>
           </div>
         ))}
+      </div>
+
+      {/* Explore section */}
+      <div>
+        <h2 className="text-center text-lg font-semibold text-gray-200 mb-6">{t.home.exploreTitle}</h2>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {FEATURE_CARDS.map((f, i) => {
+            const card = (t.home.featureCards as Array<{name: string; desc: string}>)[i]
+            return (
+              <a key={f.href} href={f.href}
+                className="group bg-deepblue-900 border border-saffron-700/20 rounded-xl p-4 hover:border-gold-400/60 hover:bg-deepblue-800 transition-all">
+                <div className="text-2xl mb-2">{f.icon}</div>
+                <div className="text-sm font-semibold text-gold-400 group-hover:text-gold-300 mb-1 leading-tight">{card.name}</div>
+                <div className="text-xs text-gray-300 leading-snug">{card.desc}</div>
+              </a>
+            )
+          })}
+        </div>
       </div>
     </div>
   )
