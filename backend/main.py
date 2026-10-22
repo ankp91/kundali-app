@@ -1,4 +1,4 @@
-# v4 — fix KAAL_RATRI_SLOT for all 7 weekdays (Kaal Ratri = night Labha slot)
+# v5 — fix KAAL_VELA_SLOT (= day Kala slot) and VAAR_VELA_SLOT (= 8-d) for all weekdays
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse

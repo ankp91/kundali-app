@@ -69,14 +69,14 @@ YAMAGANDA_SLOT  = [5, 4, 3, 2, 1, 7, 6]   # Sun=5, Mon=4, Tue=3, Wed=2, Thu=1, F
 GULIKAI_SLOT    = [7, 6, 5, 4, 3, 2, 1]   # Sun=7, Mon=6, Tue=5, Wed=4, Thu=3, Fri=2, Sat=1
 
 # Slot (1-indexed) within the 8-slot day/night sequence for special periods (weekday: Sun=0..Sat=6)
-# Verified against Drik Panchang Monday Oct 12 2026:
-#   day slot 2 = Kaal Vela, day slot 7 = Vaar Vela, night slot 4 = Kaal Ratri ✓
-# Kaal Ratri = the night slot where "Labha" choghadiya falls. Derived from NIGHT_CHOG_START:
-#   for each weekday, solve (start - 2*i) % 7 == 6 (Labha index), giving slot = i+1
-#   Sun=6, Mon=4, Tue=2, Wed=7, Thu=5, Fri=3, Sat=1
-#   Wed corrected from 5→7 (Oct 2026, verified against Drik Panchang)
-KAAL_VELA_SLOT  = [8, 2, 7, 5, 6, 3, 4]
-VAAR_VELA_SLOT  = [3, 7, 4, 2, 1, 5, 8]
+# Verified against Drik Panchang (Mon Oct 12 + Wed Oct 21 2026, Feltham/London):
+#   Mon: Kaal Vela=slot2, Vaar Vela=slot7, Kaal Ratri=slot4
+#   Wed: Kaal Vela=slot3(10:14AM), Vaar Vela+Rahu Kalam=slot5(12:46PM), Kaal Ratri=slot7(04:15AM)
+# Kaal Vela  = day slot where "Kala" choghadiya falls: solve (start+i)%7==1 → slot=(1-start)%7+1
+# Kaal Ratri = night slot where "Labha" choghadiya falls: solve (start-2i)%7==6 → slot=i+1
+# Vaar Vela  = 8-d pattern (counts down 1 slot each day: Sun=8,Mon=7,...,Sat=2)
+KAAL_VELA_SLOT  = [5, 2, 6, 3, 7, 4, 1]
+VAAR_VELA_SLOT  = [8, 7, 6, 5, 4, 3, 2]
 KAAL_RATRI_SLOT = [6, 4, 2, 7, 5, 3, 1]
 
 RITU_NAMES = ['Vasanta','Grishma','Varsha','Sharad','Hemanta','Shishira']
