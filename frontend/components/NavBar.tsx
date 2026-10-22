@@ -1,40 +1,81 @@
 'use client'
+import { useState } from 'react'
 import { useLanguage } from './LanguageProvider'
 import { useTheme } from './ThemeProvider'
+
+const NAV_LINKS = (t: any) => [
+  { href: '/learn',        label: t.nav.learn },
+  { href: '/match',        label: t.nav.match },
+  { href: '/panchang',     label: t.nav.panchang },
+  { href: '/saved',        label: t.nav.saved },
+  { href: '/varshaphal',   label: t.nav.varshaphal },
+  { href: '/prasna',       label: t.nav.prasna },
+  { href: '/baby-names',   label: t.nav.babyNames },
+  { href: '/garbh-sanskar',label: t.nav.garbhSanskar },
+  { href: '/samskara',     label: t.nav.samskara },
+]
 
 export default function NavBar() {
   const { t, lang, toggle } = useLanguage()
   const { isDark, toggleTheme } = useTheme()
+  const [open, setOpen] = useState(false)
+
+  const links = NAV_LINKS(t)
+
   return (
     <nav className="border-b border-saffron-700/30 bg-deepblue-900/80 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center flex-wrap gap-x-4 sm:gap-x-6 gap-y-2">
-        <a href="/" className="text-gold-400 font-bold text-xl tracking-wide">🔱 Aadya</a>
-        <a href="/learn" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.learn}</a>
-        <a href="/match" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.match}</a>
-        <a href="/panchang" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.panchang}</a>
-        <a href="/saved" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.saved}</a>
-        <a href="/varshaphal" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.varshaphal}</a>
-        <a href="/prasna" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.prasna}</a>
-        <a href="/baby-names" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.babyNames}</a>
-        <a href="/garbh-sanskar" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.garbhSanskar}</a>
-        <a href="/samskara" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.samskara}</a>
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={toggleTheme}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-            className="text-sm px-2.5 py-1.5 rounded-full border border-saffron-700/50 hover:border-gold-400 transition"
-          >
+      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
+        {/* Logo */}
+        <a href="/" className="text-gold-400 font-bold text-xl tracking-wide shrink-0">🔱 Aadya</a>
+
+        {/* Desktop links */}
+        <div className="hidden lg:flex items-center gap-x-5 flex-wrap">
+          {links.map(l => (
+            <a key={l.href} href={l.href}
+              className="text-saffron-400 hover:text-gold-400 transition text-sm whitespace-nowrap">
+              {l.label}
+            </a>
+          ))}
+        </div>
+
+        {/* Right side controls */}
+        <div className="ml-auto flex items-center gap-2 shrink-0">
+          <button onClick={toggleTheme} title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            className="text-sm px-2.5 py-1.5 rounded-full border border-saffron-700/50 hover:border-gold-400 transition">
             {isDark ? '☀️' : '🌙'}
           </button>
-          <button
-            onClick={toggle}
+          <button onClick={toggle}
             className="text-xs font-bold px-3 py-1.5 rounded-full border border-saffron-700/50 hover:border-gold-400 transition"
-            style={{ color: lang === 'hi' ? '#f59e0b' : '#94a3b8' }}
-          >
+            style={{ color: lang === 'hi' ? '#f59e0b' : '#94a3b8' }}>
             {lang === 'en' ? 'हिं' : 'EN'}
+          </button>
+          {/* Hamburger — mobile only */}
+          <button onClick={() => setOpen(o => !o)}
+            className="lg:hidden p-2 rounded-lg border border-saffron-700/40 hover:border-gold-400 transition"
+            aria-label="Menu">
+            <div className="space-y-1">
+              <span className={`block w-5 h-0.5 bg-saffron-400 transition-all duration-200 ${open ? 'rotate-45 translate-y-1.5' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-saffron-400 transition-all duration-200 ${open ? 'opacity-0' : ''}`} />
+              <span className={`block w-5 h-0.5 bg-saffron-400 transition-all duration-200 ${open ? '-rotate-45 -translate-y-1.5' : ''}`} />
+            </div>
           </button>
         </div>
       </div>
+
+      {/* Mobile dropdown */}
+      {open && (
+        <div className="lg:hidden border-t border-saffron-700/20 bg-deepblue-900/95 backdrop-blur px-4 py-3">
+          <div className="grid grid-cols-2 gap-2">
+            {links.map(l => (
+              <a key={l.href} href={l.href}
+                onClick={() => setOpen(false)}
+                className="text-saffron-400 hover:text-gold-400 transition text-sm py-2 px-3 rounded-lg hover:bg-saffron-700/10">
+                {l.label}
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

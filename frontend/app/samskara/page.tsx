@@ -123,27 +123,27 @@ export default function SamskaraPage() {
             </p>
           </div>
 
-          {/* Baby DOB + Gender */}
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">{s.babyDob}</label>
-              <input type="date" value={babyDob} onChange={e => setBabyDob(e.target.value)}
-                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:dark]" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-200 mb-1">{s.gender}</label>
-              <div className="flex gap-2 mt-1">
-                {(['boy', 'girl'] as const).map(g => (
-                  <button key={g} onClick={() => setGender(g)}
-                    className={`flex-1 py-2 rounded-lg border text-sm transition ${
-                      gender === g
-                        ? 'bg-saffron-400/20 border-saffron-400 text-saffron-400'
-                        : 'border-saffron-700/30 text-gray-300 hover:border-saffron-400/50'
-                    }`}>
-                    {g === 'boy' ? s.boy : s.girl}
-                  </button>
-                ))}
-              </div>
+          {/* Baby DOB */}
+          <div>
+            <label className="block text-sm font-medium text-gray-200 mb-1">{s.babyDob}</label>
+            <input type="date" value={babyDob} onChange={e => setBabyDob(e.target.value)}
+              className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:dark]" />
+          </div>
+
+          {/* Gender */}
+          <div>
+            <label className="block text-sm font-medium text-gray-200 mb-2">{s.gender}</label>
+            <div className="flex gap-3">
+              {(['boy', 'girl'] as const).map(g => (
+                <button key={g} onClick={() => setGender(g)}
+                  className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition ${
+                    gender === g
+                      ? 'bg-saffron-400/20 border-saffron-400 text-saffron-400'
+                      : 'border-saffron-700/30 text-gray-300 hover:border-saffron-400/50'
+                  }`}>
+                  {g === 'boy' ? s.boy : s.girl}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -207,7 +207,7 @@ export default function SamskaraPage() {
                     <div>
                       <span className="text-gray-300/60">{s.nakshatra}: </span>
                       <span className="text-gray-200">{r.nakshatra}</span>
-                      {r.fixed_nak && (
+                      {r.fixed_nak && ceremony === 'mundan' && (
                         <span className="ml-1 text-xs text-emerald-400">{s.fixedNak}</span>
                       )}
                     </div>
