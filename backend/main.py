@@ -1,4 +1,4 @@
-# v5 — fix KAAL_VELA_SLOT (= day Kala slot) and VAAR_VELA_SLOT (= 8-d) for all weekdays
+# v6 — add /api/samskara-muhurta for Annaprashan + Mundan (North Indian tradition)
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -12,7 +12,7 @@ load_dotenv()
 from astro import calculate_kundali, get_current_transits, calculate_varshaphal, get_transit_calendar
 from vision import parse_kundali_image
 from matching import calculate_match
-from panchang import calculate_panchang, geocode_place, calculate_monthly_panchang, find_muhurta
+from panchang import calculate_panchang, geocode_place, calculate_monthly_panchang, find_muhurta, find_samskara_muhurta
 from ai_agent import (
     interpret_full_chart, interpret_placement,
     chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
@@ -292,6 +292,27 @@ class MuhurtaRequest(BaseModel):
 def muhurta(req: MuhurtaRequest):
     try:
         return find_muhurta(req.activity, req.date_from, req.date_to, req.lat, req.lon, req.tz)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+class SamskaraMuhurtaRequest(BaseModel):
+    baby_dob: str
+    gender: str        # 'boy' | 'girl'
+    ceremony: str      # 'annaprashan' | 'mundan'
+    lat: float
+    lon: float
+    tz: str
+    days_ahead: int = 90
+
+
+@app.post("/api/samskara-muhurta")
+def samskara_muhurta(req: SamskaraMuhurtaRequest):
+    try:
+        return find_samskara_muhurta(
+            req.baby_dob, req.gender, req.ceremony,
+            req.lat, req.lon, req.tz, req.days_ahead
+        )
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

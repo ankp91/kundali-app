@@ -796,6 +796,128 @@ def find_muhurta(activity: str, date_from: str, date_to: str, lat: float, lon: f
     return results[:7]
 
 
+# ── Samskara Muhurta (North Indian tradition) ─────────────────────────────────
+
+_SAMSKARA_VARA_GOOD   = {1, 3, 4, 5}          # Mon, Wed, Thu, Fri
+_SAMSKARA_TITHI_AVOID = {4, 8, 9, 14, 15, 19, 23, 24, 29, 30}  # Rikta+Ashtami+Chaturdashi+Purnima+Amavasya both pakshas
+_SAMSKARA_NAK_GOOD    = {0, 3, 4, 6, 7, 11, 12, 13, 14, 16, 20, 21, 22, 25, 26}
+# Ashwini, Rohini, Mrigashira, Punarvasu, Pushya, U.Phalguni, Hasta, Chitra,
+# Swati, Anuradha, U.Ashadha, Shravana, Dhanishtha, U.Bhadrapada, Revati
+_SAMSKARA_NAK_AVOID   = {1, 5, 8, 9, 10, 17, 18, 19, 24}
+# Bharani, Ardra, Ashlesha, Magha, P.Phalguni, Jyeshtha, Mula, P.Ashadha, P.Bhadrapada
+_SAMSKARA_NAK_FIXED   = {3, 11, 20, 25}       # Rohini, U.Phalguni, U.Ashadha, U.Bhadrapada — preferred for Mundan
+_MUNDAN_MASA_AVOID    = {'Ashadha', 'Bhadrapada'}
+
+
+def find_samskara_muhurta(
+    baby_dob: str, gender: str, ceremony: str,
+    lat: float, lon: float, tz_str: str,
+    days_ahead: int = 90,
+) -> dict:
+    from datetime import date as date_cls, timedelta as td
+
+    baby_d = date_cls.fromisoformat(baby_dob)
+    today  = date_cls.today()
+
+    # ── Eligible age window ───────────────────────────────────────────────────
+    if ceremony == 'annaprashan':
+        if gender == 'girl':
+            win_s = baby_d + td(days=120)   # 5th month start
+            win_e = baby_d + td(days=180)   # end of 6th month
+        else:
+            win_s = baby_d + td(days=150)   # 6th month start
+            win_e = baby_d + td(days=210)   # end of 7th month
+    else:  # mundan: year 1 or year 3
+        y1_s, y1_e = baby_d, baby_d + td(days=365)
+        y3_s, y3_e = baby_d + td(days=730), baby_d + td(days=1095)
+        if y1_e >= today:
+            win_s, win_e = y1_s, y1_e
+        elif y3_e >= today:
+            win_s, win_e = y3_s, y3_e
+        else:
+            win_s = win_e = today  # both passed — search freely
+
+    # Intersect eligible window with search horizon
+    search_s = max(today, win_s)
+    search_e = min(win_s + td(days=days_ahead), win_e)
+    if search_s > search_e:
+        search_s, search_e = today, today + td(days=days_ahead)
+
+    results = []
+    d = search_s
+    while d <= search_e:
+        d_str = d.isoformat()
+        info  = _quick_day(d_str, lat, lon, tz_str)
+        if info is None:
+            d += td(days=1)
+            continue
+
+        weekday   = info['weekday']
+        tithi_num = info['tithi_num']
+        nak_i     = info['nakshatra_idx']
+        masa      = info['masa']
+        paksha    = info['paksha']
+
+        # ── Hard filters ─────────────────────────────────────────────────────
+        if weekday not in _SAMSKARA_VARA_GOOD:
+            d += td(days=1); continue
+        if tithi_num in _SAMSKARA_TITHI_AVOID:
+            d += td(days=1); continue
+        if nak_i in _SAMSKARA_NAK_AVOID:
+            d += td(days=1); continue
+        if ceremony == 'mundan' and masa in _MUNDAN_MASA_AVOID:
+            d += td(days=1); continue
+
+        # ── Scoring ──────────────────────────────────────────────────────────
+        score = 0
+        if nak_i in _SAMSKARA_NAK_GOOD:
+            score += 3
+            if ceremony == 'mundan' and nak_i in _SAMSKARA_NAK_FIXED:
+                score += 1
+        if paksha == 'Shukla':
+            score += 2
+        if weekday in {3, 4}:
+            score += 1
+
+        # ── Good choghadiya windows (skip Rahu/Gulikai/Kaal Vela) ────────────
+        try:
+            kalams   = _kalam_times(info['jd_sr'], info['jd_ss'], weekday, tz_str)
+            day_chog = _choghadiya(info['jd_sr'], info['jd_ss'], weekday, day=True, tz=tz_str, kalams=kalams)
+            good_windows = [
+                c for c in day_chog
+                if c['name'] in _GOOD_CHOG
+                and not any(o in ('rahu_kalam', 'yamaganda', 'gulikai', 'kaal_vela') for o in c.get('overlaps', []))
+            ]
+        except Exception:
+            good_windows = []
+
+        if score >= 2:
+            rating = 'excellent' if score >= 6 else 'good' if score >= 4 else 'acceptable'
+            results.append({
+                'date':         d_str,
+                'vara':         info['day_of_week'],
+                'tithi':        info['tithi'],
+                'tithi_num':    tithi_num,
+                'paksha':       paksha,
+                'nakshatra':    info['nakshatra'],
+                'nakshatra_hi': info['nakshatra_hi'],
+                'nak_rating':   'best' if nak_i in _SAMSKARA_NAK_GOOD else 'neutral',
+                'fixed_nak':    nak_i in _SAMSKARA_NAK_FIXED,
+                'masa':         masa,
+                'windows':      good_windows,
+                'score':        score,
+                'rating':       rating,
+            })
+        d += td(days=1)
+
+    results.sort(key=lambda x: x['score'], reverse=True)
+    return {
+        'eligible_start': search_s.isoformat(),
+        'eligible_end':   search_e.isoformat(),
+        'results':        results[:20],
+    }
+
+
 def geocode_place(query: str) -> dict:
     geolocator = Nominatim(user_agent='kundali_panchang')
     location   = geolocator.geocode(query)

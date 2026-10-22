@@ -17,6 +17,7 @@ export default function NavBar() {
         <a href="/prasna" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.prasna}</a>
         <a href="/baby-names" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.babyNames}</a>
         <a href="/garbh-sanskar" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.garbhSanskar}</a>
+        <a href="/samskara" className="text-saffron-400 hover:text-gold-400 transition text-sm">{t.nav.samskara}</a>
         <div className="ml-auto flex items-center gap-2">
           <button
             onClick={toggleTheme}
