@@ -1039,40 +1039,70 @@ def find_samskara_muhurta(
 # Maps a keyword (must appear in the festival string) → list of (rule, label) pairs.
 # Rules: pratah, madhyahna, aparahna, sandhya, pradosh, nishita, abhijit, moonrise
 _PUJA_RULES: list[tuple[str, list[tuple[str, str]]]] = [
-    # Diwali week
-    ('Diwali',               [('pradosh',   'Lakshmi Puja — Pradosh Kaal')]),
-    ('Dhanteras',            [('pradosh',   'Dhanvantari Puja — Pradosh Kaal')]),
-    ('Narak Chaturdashi',    [('pratah',    'Abhyang Snan — before Sunrise'),
-                              ('pradosh',   'Puja — Pradosh Kaal')]),
-    ('Choti Diwali',         [('pradosh',   'Puja — Pradosh Kaal')]),
-    ('Govardhan Puja',       [('pratah',    'Puja — Pratah Kaal')]),
-    ('Bhai Dooj',            [('aparahna',  'Tilak Ceremony — Aparahna Kaal')]),
-    # Other major
-    ('Holika Dahan',         [('pradosh',   'Holika Dahan — Pradosh Kaal')]),
-    ('Janmashtami',          [('nishita',   'Krishna Janma — Nishita Kaal (Midnight)')]),
-    ('Maha Shivratri',       [('nishita',   'Shiv Puja — Nishita Kaal (Midnight)')]),
-    ('Ram Navami',           [('madhyahna', 'Ram Janma — Madhyahna Kaal (Midday)')]),
-    ('Ganesh Chaturthi',     [('madhyahna', 'Ganesh Sthapana — Madhyahna Kaal')]),
-    ('Vijaya Dashami',       [('aparahna',  'Vijayadashami Muhurta — Aparahna Kaal')]),
-    ('Dussehra',             [('aparahna',  'Dussehra Puja — Aparahna Kaal')]),
-    ('Makar Sankranti',      [('pratah',    'Punya Kaal — Sunrise + 2 hrs')]),
-    ('Baisakhi',             [('pratah',    'Auspicious Bath — Pratah Kaal')]),
+    # ── Diwali week ──────────────────────────────────────────────────────────
+    ('Diwali',               [('pradosh',   'Lakshmi Puja — Pradosh Kaal'),
+                              ('nishita',   'Lakshmi Puja — Nishita Kaal (Midnight)')]),
+    ('Dhanteras',            [('pradosh',   'Dhanvantari Puja — Pradosh Kaal'),
+                              ('sandhya',   'Yama Deep Daan — Sandhya Kaal')]),
+    ('Narak Chaturdashi',    [('pratah',    'Abhyang Snan — before Sunrise')]),
+    ('Govardhan Puja',       [('pratah',    'Pratah Puja — Pratah Kaal'),
+                              ('aparahna',  'Annakut Darshan — Aparahna Kaal')]),
+    ('Bhai Dooj',            [('madhyahna', 'Tilak Ceremony — Madhyahna Kaal'),
+                              ('aparahna',  'Tilak Ceremony — Aparahna Kaal')]),
+    # ── Holi ─────────────────────────────────────────────────────────────────
+    ('Holika Dahan',         [('pradosh',   'Holika Dahan — Pradosh Kaal'),
+                              ('nishita',   'Holika Dahan — Nishita Kaal')]),
+    # ── Janmashtami ──────────────────────────────────────────────────────────
+    ('Janmashtami',          [('nishita',   'Krishna Janma — Nishita Kaal (Midnight)'),
+                              ('aparahna',  'Puja & Bhog — Aparahna Kaal')]),
+    # ── Maha Shivratri (4 night praharas) ────────────────────────────────────
+    ('Maha Shivratri',       [('prahara1',  'Pratham Prahara Puja — 1st Watch'),
+                              ('prahara2',  'Dwitiya Prahara Puja — 2nd Watch'),
+                              ('prahara3',  'Tritiya Prahara Puja — 3rd Watch'),
+                              ('prahara4',  'Chaturthi Prahara Puja — 4th Watch')]),
+    # ── Ram Navami ────────────────────────────────────────────────────────────
+    ('Ram Navami',           [('madhyahna', 'Ram Janma — Madhyahna Kaal (Midday)'),
+                              ('abhijit',   'Ram Puja — Abhijit Muhurta')]),
+    # ── Ganesh Chaturthi ─────────────────────────────────────────────────────
+    ('Ganesh Chaturthi',     [('madhyahna', 'Ganesh Sthapana — Madhyahna Kaal'),
+                              ('pratah',    'Ganesh Puja — Pratah Kaal')]),
+    # ── Navratri / Durga ─────────────────────────────────────────────────────
+    ('Ghatasthapana',        [('pratah',    'Ghatasthapana — Pratah Kaal'),
+                              ('abhijit',   'Ghatasthapana — Abhijit Muhurta (alt)')]),
+    ('Durgashtami',          [('sandhya',   'Sandhi Puja — Sandhya Kaal'),
+                              ('aparahna',  'Durga Puja — Aparahna Kaal')]),
+    ('Maha Navami',          [('pratah',    'Navami Havan — Pratah Kaal'),
+                              ('aparahna',  'Ayudha Puja — Aparahna Kaal')]),
+    ('Vijaya Dashami',       [('aparahna',  'Vijayadashami Muhurta — Aparahna Kaal'),
+                              ('abhijit',   'Shastra Puja — Abhijit Muhurta')]),
+    # ── Sankrantis ───────────────────────────────────────────────────────────
+    ('Makar Sankranti',      [('pratah',    'Punya Kaal — Pratah Kaal'),
+                              ('madhyahna', 'Maha Punya Kaal — Madhyahna Kaal')]),
+    ('Baisakhi',             [('pratah',    'Auspicious Bath — Pratah Kaal'),
+                              ('abhijit',   'Puja — Abhijit Muhurta')]),
     ('Vishu',                [('pratah',    'Vishukkani Darshan — Pratah Kaal')]),
     ('Mesha Sankranti',      [('pratah',    'Punya Kaal — Pratah Kaal')]),
-    ('Raksha Bandhan',       [('aparahna',  'Rakhi Tying — Aparahna Kaal')]),
-    ('Akshaya Tritiya',      [('abhijit',   'Auspicious Activities — Abhijit Muhurta')]),
-    ('Vasant Panchami',      [('pratah',    'Saraswati Puja — Pratah Kaal')]),
-    ('Ganga Dussehra',       [('abhijit',   'Ganga Snan — Abhijit Muhurta')]),
-    ('Dev Uthani Ekadashi',  [('pradosh',   'Tulsi Vivah — Pradosh Kaal')]),
-    ('Dev Diwali',           [('moonrise',  'Deep Daan — at Moonrise')]),
-    ('Kartik Purnima',       [('moonrise',  'Deep Daan — at Moonrise')]),
-    ('Sharad Purnima',       [('moonrise',  'Kojagara Puja — at Moonrise')]),
-    ('Kojagara',             [('moonrise',  'Kojagara Puja — at Moonrise')]),
-    ('Guru Purnima',         [('madhyahna', 'Guru Puja — Madhyahna Kaal')]),
-    ('Maha Navami',          [('aparahna',  'Navami Havan — Aparahna Kaal')]),
-    ('Ghatasthapana',        [('pratah',    'Ghatasthapana — first 1/10th of day')]),
-    ('Durgashtami',          [('sandhya',   'Sandhi Puja — Sandhya Kaal')]),
+    # ── Other major ──────────────────────────────────────────────────────────
+    ('Raksha Bandhan',       [('pratah',    'Rakhi Tying — Pratah Kaal'),
+                              ('aparahna',  'Rakhi Tying — Aparahna Kaal')]),
+    ('Akshaya Tritiya',      [('abhijit',   'Auspicious Activities — Abhijit Muhurta'),
+                              ('pratah',    'Puja & Dana — Pratah Kaal')]),
+    ('Vasant Panchami',      [('pratah',    'Saraswati Puja — Pratah Kaal'),
+                              ('madhyahna', 'Saraswati Puja — Madhyahna Kaal')]),
+    ('Ganga Dussehra',       [('abhijit',   'Ganga Snan — Abhijit Muhurta'),
+                              ('pratah',    'Ganga Snan — Pratah Kaal')]),
+    ('Dev Uthani Ekadashi',  [('pradosh',   'Tulsi Vivah — Pradosh Kaal'),
+                              ('nishita',   'Hari Prabodhini — Nishita Kaal')]),
+    ('Kartik Purnima',       [('moonrise',  'Deep Daan — at Moonrise'),
+                              ('pratah',    'Kartik Snan — Pratah Kaal')]),
+    ('Dev Diwali',           [('moonrise',  'Deep Daan — at Moonrise'),
+                              ('pradosh',   'Ganga Aarti — Pradosh Kaal')]),
+    ('Sharad Purnima',       [('moonrise',  'Kojagara Puja — at Moonrise'),
+                              ('nishita',   'Kheer in Moonlight — Nishita Kaal')]),
+    ('Guru Purnima',         [('pratah',    'Guru Puja — Pratah Kaal'),
+                              ('madhyahna', 'Guru Puja — Madhyahna Kaal')]),
     ('Guru Nanak Jayanti',   [('pratah',    'Prakash Utsav — Pratah Kaal')]),
+    ('Dussehra',             [('aparahna',  'Dussehra Puja — Aparahna Kaal')]),
 ]
 
 
@@ -1114,10 +1144,17 @@ def _compute_puja_windows(festival_str: str, jd_sr: float, jd_ss: float,
                 return _fmt(jd_mr, tz_str), _fmt(jd_mr + 72 / 1440, tz_str)
             except Exception:
                 return None, None
+        # Maha Shivratri night praharas — night divided into 4 equal watches
+        if rule in ('prahara1', 'prahara2', 'prahara3', 'prahara4'):
+            i = int(rule[-1]) - 1   # 0–3
+            s = jd_ss + i * night_dur / 4
+            e = jd_ss + (i + 1) * night_dur / 4
+            return _fmt(s, tz_str), _fmt(e, tz_str)
         return None, None
 
     windows: list[dict] = []
     seen_labels: set[str] = set()
+    seen_times:  set[tuple[str, str]] = set()   # deduplicate same time window from different keywords
     for keyword, rules_list in _PUJA_RULES:
         if keyword in festival_str:
             for rule, label in rules_list:
@@ -1125,8 +1162,12 @@ def _compute_puja_windows(festival_str: str, jd_sr: float, jd_ss: float,
                     continue
                 start, end = _window(rule)
                 if start and end:
+                    time_key = (start, end)
+                    if time_key in seen_times:
+                        continue
                     windows.append({'name': label, 'start': start, 'end': end})
                     seen_labels.add(label)
+                    seen_times.add(time_key)
     return windows
 
 
