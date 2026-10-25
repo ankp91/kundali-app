@@ -86,7 +86,7 @@ export default function VarshaphalPage() {
                 onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
                 placeholder={f.placeholder}
                 required
-                className="w-full bg-deepblue-950 border border-saffron-700/40 text-white rounded-lg px-3 py-2 text-sm focus:border-gold-400 focus:outline-none [color-scheme:dark]"
+                className="w-full bg-deepblue-950 border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:border-gold-400 focus:outline-none [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
           ))}

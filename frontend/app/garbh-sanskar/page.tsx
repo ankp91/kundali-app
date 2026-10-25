@@ -76,10 +76,10 @@ const RATING_LABEL_KEY: Record<string, 'ratingBest' | 'ratingGood' | 'ratingOk' 
 }
 
 const NAK_COLOR: Record<string, string> = {
-  best:       'text-yellow-300 bg-yellow-900/30 border-yellow-700/30',
-  good:       'text-green-300 bg-green-900/30 border-green-700/30',
-  acceptable: 'text-gray-300 bg-gray-900/30 border-gray-700/30',
-  avoid:      'text-red-300 bg-red-900/30 border-red-700/30',
+  best:       'text-yellow-800 dark:text-yellow-300 bg-yellow-900/30 border-yellow-700/30',
+  good:       'text-green-700 dark:text-green-300 bg-green-900/30 border-green-700/30',
+  acceptable: 'text-gray-600 dark:text-gray-300 bg-gray-900/30 border-gray-700/30',
+  avoid:      'text-red-700 dark:text-red-300 bg-red-900/30 border-red-700/30',
 }
 
 interface TodayPanchangData {
@@ -282,10 +282,10 @@ export default function GarbhSanskarPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-gray-300 font-medium">{p.overallTonight}</span>
                     <span className={`text-sm font-bold px-3 py-1 rounded-full border ${
-                      overall === 'best' ? 'text-yellow-300 border-yellow-600/50 bg-yellow-900/20' :
-                      overall === 'good' ? 'text-green-300 border-green-600/50 bg-green-900/20' :
-                      overall === 'avoid' ? 'text-red-300 border-red-600/50 bg-red-900/20' :
-                      'text-gray-300 border-gray-600/50 bg-gray-900/20'
+                      overall === 'best' ? 'text-yellow-800 dark:text-yellow-300 border-yellow-600/50 bg-yellow-900/20' :
+                      overall === 'good' ? 'text-green-700 dark:text-green-300 border-green-600/50 bg-green-900/20' :
+                      overall === 'avoid' ? 'text-red-700 dark:text-red-300 border-red-600/50 bg-red-900/20' :
+                      'text-gray-600 dark:text-gray-300 border-gray-600/50 bg-gray-900/20'
                     }`}>
                       {p[RATING_LABEL_KEY[overall]]}
                     </span>
@@ -363,7 +363,7 @@ export default function GarbhSanskarPage() {
                   type="date"
                   value={mensesDate}
                   onChange={e => setMensesDate(e.target.value)}
-                  className="w-full bg-deepblue-950 border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400 [color-scheme:dark]"
+                  className="w-full bg-deepblue-950 border border-saffron-700/40 text-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-gold-400 [color-scheme:light] dark:[color-scheme:dark]"
                 />
               </div>
               <div>
@@ -413,7 +413,7 @@ export default function GarbhSanskarPage() {
                       </div>
                       <div>
                         <div className="text-gray-300 text-sm font-medium">{night.date}</div>
-                        <div className={`text-xs font-medium mt-0.5 ${night.is_even ? 'text-blue-300' : 'text-pink-300'}`}>
+                        <div className={`text-xs font-medium mt-0.5 ${night.is_even ? 'text-blue-700 dark:text-blue-300' : 'text-pink-700 dark:text-pink-300'}`}>
                           {night.gender_hint}
                         </div>
                       </div>
@@ -426,10 +426,10 @@ export default function GarbhSanskarPage() {
                       <span className="text-gray-400 text-xs">{night.tithi}</span>
                       <span className="text-gray-500 text-xs">{night.vara}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${
-                        night.overall === 'best' ? 'text-yellow-300 border-yellow-600/50 bg-yellow-900/20' :
-                        night.overall === 'good' ? 'text-green-300 border-green-600/50 bg-green-900/20' :
-                        night.overall === 'avoid' ? 'text-red-300 border-red-600/50 bg-red-900/20' :
-                        'text-gray-300 border-gray-600/50 bg-gray-900/20'
+                        night.overall === 'best' ? 'text-yellow-800 dark:text-yellow-300 border-yellow-600/50 bg-yellow-900/20' :
+                        night.overall === 'good' ? 'text-green-700 dark:text-green-300 border-green-600/50 bg-green-900/20' :
+                        night.overall === 'avoid' ? 'text-red-700 dark:text-red-300 border-red-600/50 bg-red-900/20' :
+                        'text-gray-600 dark:text-gray-300 border-gray-600/50 bg-gray-900/20'
                       }`}>
                         {p[RATING_LABEL_KEY[night.overall]]}
                       </span>
@@ -459,7 +459,7 @@ export default function GarbhSanskarPage() {
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Good</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gray-500 inline-block"></span> Acceptable</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block"></span> Avoid</span>
-                <span className="text-blue-300">Blue = Son · Pink = Daughter</span>
+                <span className="text-blue-700 dark:text-blue-300">Blue = Son · Pink = Daughter</span>
               </div>
             </div>
           )}
@@ -492,11 +492,11 @@ export default function GarbhSanskarPage() {
             <p className="text-gray-400 text-xs mb-3">{p.nightsNote}</p>
             <div className="grid md:grid-cols-2 gap-3">
               <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-3">
-                <div className="text-blue-300 font-medium text-sm mb-1">{p.boyRule}</div>
+                <div className="text-blue-700 dark:text-blue-300 font-medium text-sm mb-1">{p.boyRule}</div>
                 <div className="text-gray-300 text-sm">{p.evenNights}</div>
               </div>
               <div className="bg-pink-900/20 border border-pink-700/30 rounded-lg p-3">
-                <div className="text-pink-300 font-medium text-sm mb-1">{p.girlRule}</div>
+                <div className="text-pink-700 dark:text-pink-300 font-medium text-sm mb-1">{p.girlRule}</div>
                 <div className="text-gray-300 text-sm">{p.oddNights}</div>
               </div>
             </div>
@@ -508,19 +508,19 @@ export default function GarbhSanskarPage() {
               <div>
                 <h4 className="text-yellow-400 text-sm font-medium mb-2">⭐ {p.bestNakshatras}</h4>
                 <div className="flex flex-wrap gap-1.5">
-                  {BEST_NAKS.map(n => <span key={n} className="bg-yellow-900/20 border border-yellow-700/30 text-yellow-300 text-xs px-2 py-0.5 rounded-full">{n}</span>)}
+                  {BEST_NAKS.map(n => <span key={n} className="bg-yellow-900/20 border border-yellow-700/30 text-yellow-800 dark:text-yellow-300 text-xs px-2 py-0.5 rounded-full">{n}</span>)}
                 </div>
               </div>
               <div>
                 <h4 className="text-green-400 text-sm font-medium mb-2">✅ {p.goodNakshatras}</h4>
                 <div className="flex flex-wrap gap-1.5">
-                  {GOOD_NAKS.map(n => <span key={n} className="bg-green-900/20 border border-green-700/30 text-green-300 text-xs px-2 py-0.5 rounded-full">{n}</span>)}
+                  {GOOD_NAKS.map(n => <span key={n} className="bg-green-900/20 border border-green-700/30 text-green-700 dark:text-green-300 text-xs px-2 py-0.5 rounded-full">{n}</span>)}
                 </div>
               </div>
               <div>
                 <h4 className="text-red-400 text-sm font-medium mb-2">❌ {p.avoidNakshatras}</h4>
                 <div className="flex flex-wrap gap-1.5">
-                  {AVOID_NAKS.map(n => <span key={n} className="bg-red-900/20 border border-red-700/30 text-red-300 text-xs px-2 py-0.5 rounded-full">{n}</span>)}
+                  {AVOID_NAKS.map(n => <span key={n} className="bg-red-900/20 border border-red-700/30 text-red-700 dark:text-red-300 text-xs px-2 py-0.5 rounded-full">{n}</span>)}
                 </div>
               </div>
             </div>

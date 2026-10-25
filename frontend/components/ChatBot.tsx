@@ -185,7 +185,7 @@ export default function ChatBot({ chartData }: Props) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           placeholder={extraChart ? `Ask about your chart or ${extraChartName}'s...` : t.chat.placeholder}
-          className="flex-1 bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-white focus:border-gold-400 focus:outline-none"
+          className="flex-1 bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 focus:border-gold-400 focus:outline-none"
         />
         <button
           onClick={send}

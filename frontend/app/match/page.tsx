@@ -58,7 +58,7 @@ function BirthInput({ form, setForm, label, t }: {
               required
               value={form[f.key as keyof BirthForm]}
               onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-              className="w-full bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-white text-sm focus:border-gold-400 focus:outline-none [color-scheme:dark]"
+              className="w-full bg-deepblue-950 border border-saffron-700/30 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:light] dark:[color-scheme:dark]"
             />
           </div>
         ))}

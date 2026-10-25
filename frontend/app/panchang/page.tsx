@@ -48,10 +48,10 @@ interface MuhurtaSlot {
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const NATURE_STYLE: Record<string, string> = {
-  very_good: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  good:      'bg-green-500/15 text-green-300 border-green-500/30',
-  neutral:   'bg-blue-500/15 text-blue-300 border-blue-500/30',
-  bad:       'bg-red-500/15 text-red-300 border-red-500/30',
+  very_good: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/30',
+  good:      'bg-green-500/15 text-green-700 dark:text-green-300 border-green-500/30',
+  neutral:   'bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30',
+  bad:       'bg-red-500/15 text-red-700 dark:text-red-300 border-red-500/30',
 }
 const PLANET_COLOR: Record<string, string> = {
   Sun:'#FF8040', Moon:'#C8C8C8', Mercury:'#48C840', Venus:'#FF70B0',
@@ -264,7 +264,7 @@ export default function PanchangPage() {
   type TabKey = typeof tabKeys[number]
 
   return (
-    <div className="min-h-screen bg-deepblue-950 text-gray-100">
+    <div className="min-h-screen bg-deepblue-950 text-gray-200">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
 
         {/* Header */}
@@ -281,7 +281,7 @@ export default function PanchangPage() {
               <input
                 type="date" value={date}
                 onChange={e => onDateChange(e.target.value)}
-                className="w-full max-w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
+                className="w-full max-w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-gold-400 [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
             <div className="flex-[2]">
@@ -292,7 +292,7 @@ export default function PanchangPage() {
                   onChange={e => setQuery(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && searchLocation()}
                   placeholder={p.locationPlaceholder}
-                  className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:border-gold-400 [color-scheme:dark]"
+                  className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-gold-400 [color-scheme:light] dark:[color-scheme:dark]"
                 />
                 <button
                   onClick={searchLocation} disabled={geoLoading}
@@ -308,7 +308,7 @@ export default function PanchangPage() {
         </div>
 
         {loading && <div className="text-center py-12 text-saffron-400/60">{p.loadingPanchang}</div>}
-        {error   && <div className="bg-red-900/20 border border-red-700/30 rounded-xl p-4 text-red-300 text-sm">{error}</div>}
+        {error   && <div className="bg-red-900/20 border border-red-700/30 rounded-xl p-4 text-red-700 dark:text-red-300 text-sm">{error}</div>}
 
         {data && !loading && (
           <>
@@ -365,7 +365,7 @@ export default function PanchangPage() {
                       <div key={label} className="flex items-center justify-between px-4 py-3">
                         <span className="text-saffron-400/70 text-sm w-24">{label}</span>
                         <div className="text-right">
-                          <div className="text-gray-100 font-medium text-sm">{value}</div>
+                          <div className="text-gray-200 font-medium text-sm">{value}</div>
                           <div className="text-gray-500 text-xs">
                             {sub}
                             {end && <span className="ml-2 text-saffron-400/60">{p.upto} {end}</span>}
@@ -392,7 +392,7 @@ export default function PanchangPage() {
                     ].map(({ label, value }) => (
                       <div key={label} className="px-4 py-2.5 flex items-center justify-between">
                         <span className="text-saffron-400/70 text-xs">{label}</span>
-                        <span className="text-gray-100 text-sm font-medium">{value}</span>
+                        <span className="text-gray-200 text-sm font-medium">{value}</span>
                       </div>
                     ))}
                   </div>
@@ -434,7 +434,7 @@ export default function PanchangPage() {
                     ].map(({ label, desc, start, end }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-2.5">
                         <div>
-                          <span className="text-sm font-medium text-emerald-300">{label}</span>
+                          <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">{label}</span>
                           <p className="text-gray-500 text-xs">{desc}</p>
                         </div>
                         {start ? (
@@ -632,10 +632,10 @@ export default function PanchangPage() {
                       title="Previous month"
                     >‹</button>
                     <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                      <select value={calMonth} onChange={e => setCalMonth(Number(e.target.value))} className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
+                      <select value={calMonth} onChange={e => setCalMonth(Number(e.target.value))} className="flex-1 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]">
                         {p.months.map((m,i) => <option key={i} value={i+1}>{m}</option>)}
                       </select>
-                      <input type="number" value={calYear} onChange={e => setCalYear(Number(e.target.value))} className="w-24 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                      <input type="number" value={calYear} onChange={e => setCalYear(Number(e.target.value))} className="w-24 bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
                     </div>
                     <button
                       onClick={() => navigateCalendar(1)}
@@ -676,7 +676,7 @@ export default function PanchangPage() {
                               >
                                 {day && (
                                   <>
-                                    <div className="font-bold text-base text-gray-100">{new Date(day.date + 'T12:00:00').getDate()}</div>
+                                    <div className="font-bold text-base text-gray-200">{new Date(day.date + 'T12:00:00').getDate()}</div>
                                     <div className="text-[10px] text-saffron-400 leading-tight mt-0.5">
                                       {day.paksha === 'Krishna' ? 'K' : 'S'} {day.tithi_num}
                                     </div>
@@ -791,7 +791,7 @@ export default function PanchangPage() {
                                   { label: p.gulikaiKalam, start: kalams.gulikai?.start,    end: kalams.gulikai?.end },
                                 ].map(({ label, start, end }) => (
                                   <div key={label} className="flex justify-between bg-red-900/10 border border-red-700/20 rounded px-2 py-1">
-                                    <span className="text-red-300/80 text-xs">{label}</span>
+                                    <span className="text-red-700/80 dark:text-red-300/80 text-xs">{label}</span>
                                     <span className="text-gray-300 text-xs">{start} – {end}</span>
                                   </div>
                                 ))}
@@ -810,7 +810,7 @@ export default function PanchangPage() {
                                   { label: p.godhuli, start: ausp.godhuli_muhurta?.start, end: ausp.godhuli_muhurta?.end },
                                 ].map(({ label, start, end }) => (
                                   <div key={label} className="flex justify-between bg-green-900/10 border border-green-700/20 rounded px-2 py-1">
-                                    <span className="text-green-300/80 text-xs">{label}</span>
+                                    <span className="text-green-700/80 dark:text-green-300/80 text-xs">{label}</span>
                                     <span className="text-gray-300 text-xs">{start} – {end}</span>
                                   </div>
                                 ))}
@@ -823,7 +823,7 @@ export default function PanchangPage() {
                             {selectedDay.is_auspicious && <span className="text-xs bg-green-500/20 text-green-400 border border-green-500/30 px-2 py-1 rounded-full">{p.tagAuspicious}</span>}
                             {selectedDay.tithi_num === 11 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">{p.tagEkadashi}</span>}
                             {selectedDay.tithi_num === 26 && <span className="text-xs bg-saffron-600/20 text-saffron-400 border border-saffron-600/30 px-2 py-1 rounded-full">{p.tagEkadashi}</span>}
-                            {selectedDay.tithi_num === 15 && <span className="text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-1 rounded-full">{p.tagPurnima}</span>}
+                            {selectedDay.tithi_num === 15 && <span className="text-xs bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-500/30 px-2 py-1 rounded-full">{p.tagPurnima}</span>}
                             {selectedDay.tithi_num === 30 && <span className="text-xs bg-gray-500/20 text-gray-400 border border-gray-500/30 px-2 py-1 rounded-full">{p.tagAmavasya}</span>}
                           </div>
                         </div>
@@ -845,7 +845,7 @@ export default function PanchangPage() {
                   <div className="grid md:grid-cols-2 gap-4 mb-4">
                     <div>
                       <label className="text-xs text-saffron-400/70 block mb-1">{p.activityLabel}</label>
-                      <select value={muhurtaActivity} onChange={e => setMuhurtaActivity(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]">
+                      <select value={muhurtaActivity} onChange={e => setMuhurtaActivity(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]">
                         <option value="marriage">{p.activities.marriage}</option>
                         <option value="business">{p.activities.business}</option>
                         <option value="travel">{p.activities.travel}</option>
@@ -857,11 +857,11 @@ export default function PanchangPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-saffron-400/70 block mb-1">{p.fromLabel}</label>
-                        <input type="date" value={muhurtaFrom} onChange={e => setMuhurtaFrom(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                        <input type="date" value={muhurtaFrom} onChange={e => setMuhurtaFrom(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
                       </div>
                       <div>
                         <label className="text-xs text-saffron-400/70 block mb-1">{p.toLabel}</label>
-                        <input type="date" value={muhurtaTo} onChange={e => setMuhurtaTo(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-100 [color-scheme:dark]" />
+                        <input type="date" value={muhurtaTo} onChange={e => setMuhurtaTo(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
                       </div>
                     </div>
                   </div>

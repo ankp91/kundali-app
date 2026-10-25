@@ -111,7 +111,7 @@ export default function ShadbalaPanel({ chartData }: { chartData: Record<string,
             <span className={`text-xs px-2 py-0.5 rounded-full border ${strengthColor(active.strength)}`}>
               {active.strength}
             </span>
-            <span className="text-gray-400 text-sm ml-auto">Total: <strong className="text-white">{active.total.toFixed(1)}</strong></span>
+            <span className="text-gray-400 text-sm ml-auto">Total: <strong className="text-gray-200">{active.total.toFixed(1)}</strong></span>
           </div>
           {COMPONENTS.map(c => {
             const comp = active[c.key] as ShadbalaComponent

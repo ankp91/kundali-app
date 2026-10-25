@@ -136,7 +136,7 @@ export default function TransitCalendarPanel({ chartData }: { chartData: Record<
                       <span className="text-lg leading-none">{PLANET_EMOJI[ev.planet] || '🪐'}</span>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-white text-sm font-medium">{eventTitle(ev)}</span>
+                          <span className="text-gray-200 text-sm font-medium">{eventTitle(ev)}</span>
                           <span className={`text-xs px-1.5 py-0.5 rounded border ${
                             ev.type === 'ingress'
                               ? 'bg-gold-400/10 text-gold-400 border-gold-400/30'

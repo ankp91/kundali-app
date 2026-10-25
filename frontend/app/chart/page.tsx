@@ -449,10 +449,10 @@ export default function ChartPage() {
 
               {doshaData && (
                 <div className="space-y-4">
-                  <div className={`border rounded-xl p-4 ${doshaData.mangal_dosha.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                  <div className={`border rounded-xl p-4 ${doshaData.mangal_dosha.present ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700/40' : 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700/40'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold">{t.doshas.mangalDosha}</h3>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.mangal_dosha.present ? 'border-red-500 bg-red-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.mangal_dosha.present ? 'border-red-500 bg-red-100 dark:bg-red-900/40' : 'border-green-500 bg-green-100 dark:bg-green-900/40'}`}>
                         {doshaData.mangal_dosha.present ? t.doshas.present : t.doshas.absent}
                       </span>
                     </div>
@@ -461,10 +461,10 @@ export default function ChartPage() {
                     <p className="text-gray-400 text-xs">{doshaData.mangal_dosha.description}</p>
                   </div>
 
-                  <div className={`border rounded-xl p-4 ${doshaData.kal_sarpa.present ? 'text-red-400 bg-red-900/30 border-red-700/40' : doshaData.kal_sarpa.partial ? 'text-orange-400 bg-orange-900/30 border-orange-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                  <div className={`border rounded-xl p-4 ${doshaData.kal_sarpa.present ? 'text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border-red-300 dark:border-red-700/40' : doshaData.kal_sarpa.partial ? 'text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700/40' : 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700/40'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold">{t.doshas.kalSarpa}</h3>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.kal_sarpa.present ? 'border-red-500 bg-red-900/40' : doshaData.kal_sarpa.partial ? 'border-orange-500 bg-orange-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.kal_sarpa.present ? 'border-red-500 bg-red-100 dark:bg-red-900/40' : doshaData.kal_sarpa.partial ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-green-500 bg-green-100 dark:bg-green-900/40'}`}>
                         {doshaData.kal_sarpa.present ? t.doshas.present : doshaData.kal_sarpa.partial ? t.doshas.partial : t.doshas.absent}
                       </span>
                     </div>
@@ -474,10 +474,10 @@ export default function ChartPage() {
                     <p className="text-sm mb-1">Rahu: {doshaData.kal_sarpa.rahu_sign} · Ketu: {doshaData.kal_sarpa.ketu_sign}</p>
                   </div>
 
-                  <div className={`border rounded-xl p-4 ${doshaData.sade_sati.active ? 'text-orange-400 bg-orange-900/30 border-orange-700/40' : 'text-green-400 bg-green-900/30 border-green-700/40'}`}>
+                  <div className={`border rounded-xl p-4 ${doshaData.sade_sati.active ? 'text-orange-700 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 border-orange-300 dark:border-orange-700/40' : 'text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/30 border-green-300 dark:border-green-700/40'}`}>
                     <div className="flex items-center justify-between mb-2">
                       <h3 className="font-semibold">{t.doshas.sadeSati}</h3>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.sade_sati.active ? 'border-orange-500 bg-orange-900/40' : 'border-green-500 bg-green-900/40'}`}>
+                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${doshaData.sade_sati.active ? 'border-orange-500 bg-orange-100 dark:bg-orange-900/40' : 'border-green-500 bg-green-100 dark:bg-green-900/40'}`}>
                         {doshaData.sade_sati.active ? t.doshas.active : t.doshas.inactive}
                       </span>
                     </div>

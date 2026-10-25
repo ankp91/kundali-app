@@ -37,9 +37,9 @@ function fmtDate(iso: string) {
 }
 
 const RATING_STYLE: Record<string, string> = {
-  excellent: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40',
+  excellent: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40',
   good:      'bg-gold-400/10 text-gold-400 border border-gold-400/30',
-  acceptable:'bg-blue-500/10 text-blue-300 border border-blue-500/30',
+  acceptable:'bg-blue-500/10 text-blue-700 dark:text-blue-300 border border-blue-500/30',
 }
 
 export default function SamskaraPage() {
@@ -127,7 +127,7 @@ export default function SamskaraPage() {
           <div>
             <label className="block text-sm font-medium text-gray-200 mb-1">{s.babyDob}</label>
             <input type="date" value={babyDob} onChange={e => setBabyDob(e.target.value)}
-              className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:dark]" />
+              className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:light] dark:[color-scheme:dark]" />
           </div>
 
           {/* Gender */}
@@ -231,7 +231,7 @@ export default function SamskaraPage() {
                     ) : (
                       <div className="flex flex-wrap gap-2">
                         {r.windows.map((w, j) => (
-                          <span key={j} className="text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-3 py-1 rounded-full">
+                          <span key={j} className="text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 px-3 py-1 rounded-full">
                             {w.name} · {w.start}–{w.end}
                           </span>
                         ))}

@@ -91,7 +91,7 @@ export default function PrasnaPage() {
                 placeholder="e.g. Will I get the job? Should I travel now? When will I meet my partner?"
                 rows={3}
                 required
-                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-4 py-2 text-white focus:border-gold-400 focus:outline-none resize-none text-sm"
+                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-4 py-2 text-gray-200 focus:border-gold-400 focus:outline-none resize-none text-sm"
               />
             </div>
             <div>
@@ -102,7 +102,7 @@ export default function PrasnaPage() {
                 onChange={e => setPlace(e.target.value)}
                 placeholder="e.g. Mumbai, London, New York"
                 required
-                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-4 py-2 text-white focus:border-gold-400 focus:outline-none text-sm"
+                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-4 py-2 text-gray-200 focus:border-gold-400 focus:outline-none text-sm"
               />
               <p className="text-gray-600 text-xs mt-1">The chart is cast for right now at this location.</p>
             </div>
@@ -127,7 +127,7 @@ export default function PrasnaPage() {
       {chart && ascendant && planets && (
         <div className="space-y-6">
           <div className="bg-deepblue-900/50 border border-saffron-700/20 rounded-xl p-4">
-            <p className="text-saffron-400 text-sm font-medium mb-1">Question: <span className="text-white">{chart.question as string}</span></p>
+            <p className="text-saffron-400 text-sm font-medium mb-1">Question: <span className="text-gray-200">{chart.question as string}</span></p>
             <p className="text-gray-500 text-xs">
               Chart cast for {chart.return_date as string} at {chart.return_time as string} UTC
             </p>
