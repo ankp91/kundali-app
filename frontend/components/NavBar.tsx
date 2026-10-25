@@ -13,6 +13,7 @@ const NAV_LINKS = (t: any) => [
   { href: '/baby-names',   label: t.nav.babyNames },
   { href: '/garbh-sanskar',label: t.nav.garbhSanskar },
   { href: '/samskara',     label: t.nav.samskara },
+  { href: '/festivals',    label: t.nav.festivals },
 ]
 
 export default function NavBar() {

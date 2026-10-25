@@ -8,6 +8,7 @@ import { useLanguage } from '@/components/LanguageProvider'
 const FEATURE_CARDS = [
   { icon: '📅', href: '/panchang' },
   { icon: '💑', href: '/match' },
+  { icon: '🪔', href: '/festivals' },
   { icon: '🤰', href: '/garbh-sanskar' },
   { icon: '🙏', href: '/samskara' },
   { icon: '👶', href: '/baby-names' },

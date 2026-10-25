@@ -96,6 +96,7 @@ _FESTIVALS = {
     #      Amanta Ashwin Krishna = Purnimanta Kartik Krishna (Diwali week).
 
     # ── Chaitra ───────────────────────────────────────────────────────────
+    ('Chaitra', 'Krishna',  8):  'Sheetala Ashtami · Basoda',
     ('Chaitra', 'Shukla',  1):  'Gudi Padwa · Ugadi · Chaitra Navratri Begins',
     ('Chaitra', 'Shukla',  2):  'Chaitra Navratri Day 2',
     ('Chaitra', 'Shukla',  3):  'Chaitra Navratri Day 3 · Saubhagya Teej',
@@ -133,6 +134,7 @@ _FESTIVALS = {
     ('Shravana', 'Shukla',  5):  'Nag Panchami',
     ('Shravana', 'Shukla', 11):  'Putrada Ekadashi',
     ('Shravana', 'Shukla', 15):  'Raksha Bandhan · Shravana Purnima · Avani Avittam',
+    ('Shravana', 'Shukla',  3):  'Hariyali Teej · Shravana Teej',
     # Shravana Krishna (Purnimanta) = Amanta Ashadha Krishna
     ('Shravana', 'Krishna',  8):  'Kalashtami',
     ('Shravana', 'Krishna', 15):  'Shravana Amavasya',
@@ -181,6 +183,7 @@ _FESTIVALS = {
     ('Kartik', 'Krishna', 14):  'Narak Chaturdashi · Choti Diwali · Hanuman Puja',
     ('Kartik', 'Krishna', 15):  'Diwali · Lakshmi Puja · Kartik Amavasya',
     # ── Margashirsha ──────────────────────────────────────────────────────
+    ('Margashirsha', 'Shukla',  5):  'Vivah Panchami · Sita Ram Vivah',
     ('Margashirsha', 'Shukla', 11):  'Geeta Jayanti · Mokshada Ekadashi',
     ('Margashirsha', 'Shukla', 15):  'Margashirsha Purnima · Dattatreya Jayanti',
     # Margashirsha Krishna (Purnimanta) = Amanta Kartik Krishna
@@ -201,6 +204,60 @@ _FESTIVALS = {
     ('Phalguna', 'Krishna', 14):  'Maha Shivratri',
     ('Phalguna', 'Krishna', 15):  'Phalguna Amavasya',
 }
+
+
+# ── Special Yogas ─────────────────────────────────────────────────────────────
+
+# Gand Mool: Moon in junction nakshatras (Ashwini=0, Ashlesha=8, Magha=9,
+#            Jyeshtha=17, Mula=18, Revati=26)
+_GAND_MOOL_NAK = {0, 8, 9, 17, 18, 26}
+
+# Sarvaartha Siddhi Yoga: auspicious vara+nakshatra combinations
+_SARVAARTHA_SIDDHI: dict[int, set[int]] = {
+    0: {0, 7, 11, 12, 20, 25},  # Sun: Ashwini,Pushya,Uttara Phalguni,Hasta,Uttara Ashadha,Uttara Bhadrapada
+    1: {3, 4, 7, 16, 21},       # Mon: Rohini,Mrigashira,Pushya,Anuradha,Shravana
+    2: {0, 2, 4, 13, 22},       # Tue: Ashwini,Krittika,Mrigashira,Chitra,Dhanishtha
+    3: {2, 3, 4, 12, 16},       # Wed: Krittika,Rohini,Mrigashira,Hasta,Anuradha
+    4: {0, 6, 7, 16, 26},       # Thu: Ashwini,Punarvasu,Pushya,Anuradha,Revati
+    5: {0, 6, 16, 23, 26},      # Fri: Ashwini,Punarvasu,Anuradha,Shatabhisha,Revati
+    6: {3, 14, 16, 21, 22},     # Sat: Rohini,Swati,Anuradha,Shravana,Dhanishtha
+}
+
+# Amrit Siddhi Yoga: most auspicious vara+nakshatra
+_AMRIT_SIDDHI: dict[int, set[int]] = {
+    0: {12},   # Sun + Hasta
+    1: {4},    # Mon + Mrigashira
+    2: {0},    # Tue + Ashwini
+    3: {16},   # Wed + Anuradha
+    4: {7},    # Thu + Pushya
+    5: {26},   # Fri + Revati
+    6: {3},    # Sat + Rohini
+}
+
+# Dwipushkar Yoga: vara+tithi+nakshatra (rare, very auspicious)
+_DWIPUSHKAR_VARA_TITHI: dict[int, set[int]] = {
+    0: {2, 7, 12},   # Sun + Dwitiya/Saptami/Dwadashi
+    2: {2, 7, 12},   # Tue + same
+    6: {2, 7, 12},   # Sat + same
+}
+_DWIPUSHKAR_NAK = {3, 12, 22}   # Rohini, Hasta, Dhanishtha
+
+def _special_yogas(weekday: int, nak_i: int, tithi_num: int) -> list[str]:
+    """Return list of special yoga names for this vara + nakshatra + tithi combo."""
+    yogas: list[str] = []
+    if nak_i in _GAND_MOOL_NAK:
+        yogas.append('Gand Mool')
+    if nak_i in _AMRIT_SIDDHI.get(weekday, set()):
+        yogas.append('Amrit Siddhi Yoga')
+    if nak_i in _SARVAARTHA_SIDDHI.get(weekday, set()):
+        yogas.append('Sarvaartha Siddhi Yoga')
+    if weekday == 0 and nak_i == 7:
+        yogas.append('Ravi Pushya Yoga')
+    if weekday == 4 and nak_i == 7:
+        yogas.append('Guru Pushya Yoga')
+    if weekday in _DWIPUSHKAR_VARA_TITHI and tithi_num in _DWIPUSHKAR_VARA_TITHI[weekday] and nak_i in _DWIPUSHKAR_NAK:
+        yogas.append('Dwipushkar Yoga')
+    return yogas
 
 
 def _find_amavasya(jd_guess: float) -> float:
@@ -476,9 +533,27 @@ def calculate_panchang(date_str: str, lat: float, lon: float, tz_str: str) -> di
             festival = (festival + ' · ' + ksh_fest) if festival else ksh_fest
     sun_sid_noon = _sidereal(jd_noon, swe.SUN)
     sun_sid_prev = _sidereal(jd_noon - 1.0, swe.SUN)
-    if sun_sid_prev < 270 <= sun_sid_noon or (sun_sid_prev > 300 and sun_sid_noon < 30):
-        sankranti = 'Makar Sankranti · Pongal · Lohri · Uttarayan'
-        festival  = (festival + ' · ' + sankranti) if festival else sankranti
+    _SANKRANTI = [
+        (  0, 'Mesha Sankranti · Baisakhi · Vishu · Puthandu'),
+        ( 30, 'Vrishabha Sankranti'),
+        ( 60, 'Mithuna Sankranti'),
+        ( 90, 'Karka Sankranti · Dakshinayan Begins'),
+        (120, 'Simha Sankranti'),
+        (150, 'Kanya Sankranti'),
+        (180, 'Tula Sankranti'),
+        (210, 'Vrischika Sankranti'),
+        (240, 'Dhanu Sankranti'),
+        (270, 'Makar Sankranti · Pongal · Lohri · Uttarayan'),
+        (300, 'Kumbha Sankranti'),
+        (330, 'Meena Sankranti'),
+    ]
+    for deg, name in _SANKRANTI:
+        if sun_sid_prev < deg <= sun_sid_noon or (sun_sid_prev > deg + 30 and sun_sid_noon < deg + 5):
+            festival = (festival + ' · ' + name) if festival else name
+            break
+
+    # Special yogas
+    special_yogas = _special_yogas(weekday, nak_i, tithi_i + 1)
 
     return {
         'date': date_str,
@@ -511,11 +586,12 @@ def calculate_panchang(date_str: str, lat: float, lon: float, tz_str: str) -> di
             'godhuli_muhurta': {'start': godhuli_start, 'end': godhuli_end},
         },
         'samvat':    {'vikram': vs, 'shaka': shaka},
-        'ritu':      ritu,
-        'ayana':     ayana,
-        'dinamana':  f"{day_min // 60}h {day_min % 60:02d}m",
-        'ratrimana': f"{night_min // 60}h {night_min % 60:02d}m",
-        'festival':  festival,
+        'ritu':          ritu,
+        'ayana':         ayana,
+        'dinamana':      f"{day_min // 60}h {day_min % 60:02d}m",
+        'ratrimana':     f"{night_min // 60}h {night_min % 60:02d}m",
+        'festival':      festival,
+        'special_yogas': special_yogas,
     }
 
 
@@ -680,12 +756,25 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
             if ksh_fest:
                 festival = (festival + ' · ' + ksh_fest) if festival else ksh_fest
 
-        # Solar festival: Makar Sankranti when Sun crosses into sidereal Capricorn
+        # Solar festivals — all 12 Sankrantis
         sun_sid_noon  = _sidereal(jd_noon, swe.SUN)
         sun_sid_prev  = _sidereal(jd_noon - 1.0, swe.SUN)
-        if sun_sid_prev < 270 <= sun_sid_noon or (sun_sid_prev > 300 and sun_sid_noon < 30):
-            sankranti = 'Makar Sankranti · Pongal · Lohri · Uttarayan'
-            festival  = (festival + ' · ' + sankranti) if festival else sankranti
+        _SKT = [
+            (  0, 'Mesha Sankranti · Baisakhi · Vishu · Puthandu'),
+            ( 30, 'Vrishabha Sankranti'), ( 60, 'Mithuna Sankranti'),
+            ( 90, 'Karka Sankranti · Dakshinayan Begins'),
+            (120, 'Simha Sankranti'), (150, 'Kanya Sankranti'),
+            (180, 'Tula Sankranti'), (210, 'Vrischika Sankranti'),
+            (240, 'Dhanu Sankranti'),
+            (270, 'Makar Sankranti · Pongal · Lohri · Uttarayan'),
+            (300, 'Kumbha Sankranti'), (330, 'Meena Sankranti'),
+        ]
+        for deg, name in _SKT:
+            if sun_sid_prev < deg <= sun_sid_noon or (sun_sid_prev > deg + 30 and sun_sid_noon < deg + 5):
+                festival = (festival + ' · ' + name) if festival else name
+                break
+        # Special yogas (vara + nakshatra + tithi)
+        special_yogas = _special_yogas(weekday, nak_i, tithi_i + 1)
         kalams   = _kalam_times(jd_sr, jd_ss, weekday, tz_str)
         return {
             "date": date_str,
@@ -704,6 +793,7 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
             "sunrise": _fmt(jd_sr, tz_str),
             "masa": masa,
             "festival": festival,
+            "special_yogas": special_yogas,
             "rahu_start": kalams['rahu_kalam']['start'],
             "rahu_end":   kalams['rahu_kalam']['end'],
             "jd_sr": jd_sr,
@@ -916,6 +1006,37 @@ def find_samskara_muhurta(
         'eligible_end':   search_e.isoformat(),
         'results':        results[:20],
     }
+
+
+# ── Yearly Festival Calendar ───────────────────────────────────────────────────
+
+def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list[dict]:
+    """Return every festival day in the given calendar year.
+
+    Each entry has: date, day_of_week, masa, tithi, tithi_num, paksha,
+    nakshatra, festival (string, may have multiple separated by ' · '),
+    special_yogas (list).  Days with no festival and no special yoga are omitted.
+    """
+    from datetime import date as date_cls, timedelta as td
+    festivals = []
+    d   = date_cls(year, 1, 1)
+    end = date_cls(year + 1, 1, 1)
+    while d < end:
+        info = _quick_day(d.isoformat(), lat, lon, tz_str)
+        if info and (info.get('festival') or info.get('special_yogas')):
+            festivals.append({
+                'date':          info['date'],
+                'day_of_week':   info['day_of_week'],
+                'masa':          info['masa'],
+                'tithi':         info['tithi'],
+                'tithi_num':     info['tithi_num'],
+                'paksha':        info['paksha'],
+                'nakshatra':     info['nakshatra'],
+                'festival':      info.get('festival', ''),
+                'special_yogas': info.get('special_yogas', []),
+            })
+        d += td(days=1)
+    return festivals
 
 
 def geocode_place(query: str) -> dict:

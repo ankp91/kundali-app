@@ -1,4 +1,4 @@
-# v6 — add /api/samskara-muhurta for Annaprashan + Mundan (North Indian tradition)
+# v7 — add /api/festivals (yearly Hindu festival calendar + special yogas)
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -12,7 +12,7 @@ load_dotenv()
 from astro import calculate_kundali, get_current_transits, calculate_varshaphal, get_transit_calendar
 from vision import parse_kundali_image
 from matching import calculate_match
-from panchang import calculate_panchang, geocode_place, calculate_monthly_panchang, find_muhurta, find_samskara_muhurta
+from panchang import calculate_panchang, geocode_place, calculate_monthly_panchang, find_muhurta, find_samskara_muhurta, get_yearly_festivals
 from ai_agent import (
     interpret_full_chart, interpret_placement,
     chat_with_chart, get_lessons, get_lesson, explain_lesson_topic, interpret_match,
@@ -781,3 +781,15 @@ def garbhadhana_window(req: ConceptionWindowRequest):
         })
 
     return {"nights": results, "menses_start": req.menses_start}
+
+
+# ── Festival Calendar ──────────────────────────────────────────────────────────
+
+@app.get("/api/festivals")
+def festivals(year: int, lat: float, lon: float, tz: str):
+    """Return all Hindu festival days + special yogas for the given calendar year."""
+    try:
+        data = get_yearly_festivals(year, lat, lon, tz)
+        return {"year": year, "festivals": data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
