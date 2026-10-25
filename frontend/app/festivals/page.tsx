@@ -35,18 +35,6 @@ const YOGA_COLOR: Record<string, string> = {
   'Gand Mool':             'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/20',
 }
 
-function fmtDate(iso: string) {
-  const [y, m, d] = iso.split('-').map(Number)
-  const dt = new Date(y, m - 1, d)
-  return `${dt.getDate()} ${MONTHS[m - 1]} ${y}`
-}
-
-function fmtShort(iso: string) {
-  const [, m, d] = iso.split('-').map(Number)
-  return `${d} ${MONTHS[m - 1]}`
-}
-
-// Split festival string by ' · ' and return each as a separate badge
 function festivalBadges(festival: string): string[] {
   return festival ? festival.split(' · ').map(f => f.trim()).filter(Boolean) : []
 }
@@ -73,15 +61,15 @@ export default function FestivalsPage() {
   const today = new Date()
   const todayStr = today.toISOString().split('T')[0]
   const [year, setYear] = useState(today.getFullYear())
-  const [activeMonth, setActiveMonth] = useState<number | null>(null)  // null = all
+  const [activeMonth, setActiveMonth] = useState<number | null>(null)
   const [locQuery, setLocQuery] = useState('')
   const [geo, setGeo] = useState<GeoResult | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
   const [festivals, setFestivals] = useState<FestivalDay[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [expandedDate, setExpandedDate] = useState<string | null>(null)
 
-  // Default to London coords so page works before user sets location
   const effectiveGeo = geo || { lat: 51.5074, lon: -0.1278, tz: 'Europe/London', name: 'London, UK' }
 
   const fetchFestivals = useCallback(async () => {
@@ -114,12 +102,10 @@ export default function FestivalsPage() {
     finally { setGeoLoading(false) }
   }
 
-  // Filter by month
   const filtered = activeMonth === null
     ? festivals
     : festivals.filter(f => parseInt(f.date.split('-')[1]) === activeMonth)
 
-  // Group by month for display
   const byMonth: Record<number, FestivalDay[]> = {}
   filtered.forEach(f => {
     const m = parseInt(f.date.split('-')[1])
@@ -127,8 +113,6 @@ export default function FestivalsPage() {
     byMonth[m].push(f)
   })
   const sortedMonths = Object.keys(byMonth).map(Number).sort((a, b) => a - b)
-
-  // Count festivals with actual festival names (not just yogas)
   const festCount = festivals.filter(f => f.festival).length
 
   return (
@@ -142,35 +126,33 @@ export default function FestivalsPage() {
         </div>
 
         {/* Controls */}
-        <div className="bg-deepblue-900 rounded-2xl p-5 border border-saffron-700/20 mb-6 space-y-4">
-          <div className="flex gap-3 flex-wrap items-end">
-            {/* Year */}
-            <div>
-              <label className="block text-xs text-saffron-400/70 mb-1">Year</label>
-              <div className="flex items-center gap-2">
-                <button onClick={() => setYear(y => y - 1)}
-                  className="px-2.5 py-1.5 bg-deepblue-950 border border-saffron-700/30 text-saffron-400 hover:border-gold-400 rounded-lg text-sm transition">◀</button>
-                <span className="text-gold-400 font-bold text-lg w-16 text-center">{year}</span>
-                <button onClick={() => setYear(y => y + 1)}
-                  className="px-2.5 py-1.5 bg-deepblue-950 border border-saffron-700/30 text-saffron-400 hover:border-gold-400 rounded-lg text-sm transition">▶</button>
-              </div>
+        <div className="bg-deepblue-900 rounded-2xl p-5 border border-saffron-700/20 mb-6 space-y-3">
+          {/* Year row */}
+          <div>
+            <label className="block text-xs text-saffron-400/70 mb-1">Year</label>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setYear(y => y - 1)}
+                className="px-3 py-1.5 bg-deepblue-950 border border-saffron-700/30 text-saffron-400 hover:border-gold-400 rounded-lg text-sm transition">◀</button>
+              <span className="text-gold-400 font-bold text-lg w-16 text-center">{year}</span>
+              <button onClick={() => setYear(y => y + 1)}
+                className="px-3 py-1.5 bg-deepblue-950 border border-saffron-700/30 text-saffron-400 hover:border-gold-400 rounded-lg text-sm transition">▶</button>
             </div>
+          </div>
 
-            {/* Location */}
-            <div className="flex-1 min-w-48">
-              <label className="block text-xs text-saffron-400/70 mb-1">{p.locationLabel}</label>
-              <div className="flex gap-2">
-                <input value={locQuery} onChange={e => setLocQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && searchLocation()}
-                  placeholder={p.locationPlaceholder}
-                  className="flex-1 bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none" />
-                <button onClick={searchLocation} disabled={geoLoading}
-                  className="px-3 py-2 bg-saffron-700/30 hover:bg-saffron-700/50 text-saffron-400 rounded-lg text-sm transition">
-                  {geoLoading ? '...' : p.search}
-                </button>
-              </div>
-              {geo && <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">📍 {geo.name}</p>}
+          {/* Location row */}
+          <div>
+            <label className="block text-xs text-saffron-400/70 mb-1">{p.locationLabel}</label>
+            <div className="flex gap-2">
+              <input value={locQuery} onChange={e => setLocQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && searchLocation()}
+                placeholder={p.locationPlaceholder}
+                className="flex-1 min-w-0 bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none" />
+              <button onClick={searchLocation} disabled={geoLoading}
+                className="shrink-0 px-4 py-2 bg-saffron-700/30 hover:bg-saffron-700/50 text-saffron-400 rounded-lg text-sm transition">
+                {geoLoading ? '...' : p.search}
+              </button>
             </div>
+            {geo && <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1">📍 {geo.name}</p>}
           </div>
 
           {/* Stats */}
@@ -195,7 +177,6 @@ export default function FestivalsPage() {
           ))}
         </div>
 
-        {/* Loading */}
         {loading && (
           <div className="text-center py-16 text-saffron-400/60 text-sm animate-pulse">{p.loading}</div>
         )}
@@ -213,7 +194,6 @@ export default function FestivalsPage() {
 
             {sortedMonths.map(monthNum => (
               <div key={monthNum}>
-                {/* Month heading */}
                 <div className="flex items-center gap-3 mb-3">
                   <h2 className="text-gold-400 font-bold text-lg">{MONTHS_FULL[monthNum - 1]}</h2>
                   <div className="flex-1 h-px bg-saffron-700/20" />
@@ -225,18 +205,21 @@ export default function FestivalsPage() {
                     const isToday = f.date === todayStr
                     const badges = festivalBadges(f.festival)
                     const hasMajor = badges.some(isMajor)
+                    const hasPuja = f.puja_timings && f.puja_timings.length > 0
+                    const isExpanded = expandedDate === f.date
 
                     return (
-                      <div key={i} className={`rounded-xl border p-4 transition ${
+                      <div key={i} className={`rounded-xl border transition ${
                         isToday
                           ? 'border-gold-400/60 bg-gold-400/5'
                           : hasMajor
                           ? 'border-saffron-700/40 bg-deepblue-900'
                           : 'border-saffron-700/20 bg-deepblue-900/60'
                       }`}>
-                        <div className="flex items-start gap-3">
+                        {/* Main card row */}
+                        <div className="flex items-start gap-3 p-4">
                           {/* Date column */}
-                          <div className="shrink-0 text-center w-14">
+                          <div className="shrink-0 text-center w-12">
                             <div className={`text-2xl font-bold leading-none ${isToday ? 'text-gold-400' : 'text-gray-200'}`}>
                               {parseInt(f.date.split('-')[2])}
                             </div>
@@ -283,22 +266,41 @@ export default function FestivalsPage() {
                               </div>
                             )}
 
-                            {/* Puja timing windows */}
-                            {f.puja_timings && f.puja_timings.length > 0 && (
-                              <div className="mt-2.5 space-y-1">
-                                {f.puja_timings.map((pt, k) => (
-                                  <div key={k} className="flex items-center gap-2 text-xs">
-                                    <span className="text-saffron-400/70">🕯</span>
-                                    <span className="text-gray-300/80 leading-tight">{pt.name}</span>
-                                    <span className="ml-auto shrink-0 font-medium text-gold-400 tabular-nums">
-                                      {pt.start} – {pt.end}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
+                            {/* Muhurat toggle button */}
+                            {hasPuja && (
+                              <button
+                                onClick={() => setExpandedDate(isExpanded ? null : f.date)}
+                                className="mt-2.5 flex items-center gap-1.5 text-xs text-saffron-400 hover:text-gold-400 transition"
+                              >
+                                <span>🪔</span>
+                                <span>{f.puja_timings.length} {f.puja_timings.length === 1 ? 'Muhurat' : 'Muhurats'}</span>
+                                <span className="text-[10px] opacity-60">{isExpanded ? '▲' : '▼'}</span>
+                              </button>
                             )}
                           </div>
                         </div>
+
+                        {/* Expanded muhurat panel */}
+                        {hasPuja && isExpanded && (
+                          <div className="px-4 pb-4 pt-0 border-t border-saffron-700/20 mt-0">
+                            <div className="pt-3 space-y-2">
+                              {f.puja_timings.map((pt, k) => (
+                                <div key={k} className="flex items-start gap-2">
+                                  <span className="text-base leading-none mt-0.5">🪔</span>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs text-gray-200 font-medium leading-snug">{pt.name}</div>
+                                  </div>
+                                  <div className="shrink-0 text-xs font-semibold text-gold-400 tabular-nums whitespace-nowrap">
+                                    {pt.start} – {pt.end}
+                                  </div>
+                                </div>
+                              ))}
+                              <p className="text-[11px] text-gray-300/40 pt-1">
+                                Timings for {geo?.name || 'London, UK'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
                   })}
