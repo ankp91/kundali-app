@@ -773,6 +773,32 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
             if sun_sid_prev < deg <= sun_sid_noon or (sun_sid_prev > deg + 30 and sun_sid_noon < deg + 5):
                 festival = (festival + ' · ' + name) if festival else name
                 break
+        # ── Pradosh correction for Diwali ──────────────────────────────────────
+        # Traditional rule: Diwali (Lakshmi Puja) is observed on the day when
+        # Amavasya is present at Pradosh Kaal (~45 min after sunset), NOT the
+        # day when Amavasya is at sunrise. When Amavasya begins after sunrise
+        # but before Pradosh (as in 2026), the sunrise-tithi rule places Diwali
+        # a day late. This block corrects that.
+        _masa_base = masa.replace('Adhika ', '').strip()
+        if _masa_base == 'Kartik':
+            _jd_pradosh      = jd_ss + 45.0 / 1440
+            _diff_p          = (_sidereal(_jd_pradosh, swe.MOON) - _sidereal(_jd_pradosh, swe.SUN)) % 360
+            _amavasya_pradosh = (int(_diff_p / 12) == 29)   # 29 = 0-indexed = Amavasya
+
+            _DIWALI_STR = 'Diwali · Lakshmi Puja · Kartik Amavasya'
+            # Check for 'Diwali' as an exact festival part (not substring of 'Choti Diwali')
+            _fest_parts     = set(p.strip() for p in (festival or '').split(' · '))
+            _has_main_diwali = 'Diwali' in _fest_parts
+
+            if _amavasya_pradosh and not _has_main_diwali:
+                # Amavasya begins today (after sunrise, before Pradosh) → Diwali tonight
+                festival = (festival + ' · ' + _DIWALI_STR) if festival else _DIWALI_STR
+            elif not _amavasya_pradosh and _has_main_diwali:
+                # Amavasya at sunrise but not at Pradosh → Diwali was yesterday; strip here
+                festival = festival.replace(' · ' + _DIWALI_STR, '')
+                festival = festival.replace(_DIWALI_STR + ' · ', '')
+                festival = festival.replace(_DIWALI_STR, '').strip(' ·').strip()
+
         # Special yogas (vara + nakshatra + tithi)
         special_yogas = _special_yogas(weekday, nak_i, tithi_i + 1)
         kalams   = _kalam_times(jd_sr, jd_ss, weekday, tz_str)
@@ -1008,6 +1034,102 @@ def find_samskara_muhurta(
     }
 
 
+# ── Festival Puja Timings ─────────────────────────────────────────────────────
+
+# Maps a keyword (must appear in the festival string) → list of (rule, label) pairs.
+# Rules: pratah, madhyahna, aparahna, sandhya, pradosh, nishita, abhijit, moonrise
+_PUJA_RULES: list[tuple[str, list[tuple[str, str]]]] = [
+    # Diwali week
+    ('Diwali',               [('pradosh',   'Lakshmi Puja — Pradosh Kaal')]),
+    ('Dhanteras',            [('pradosh',   'Dhanvantari Puja — Pradosh Kaal')]),
+    ('Narak Chaturdashi',    [('pratah',    'Abhyang Snan — before Sunrise'),
+                              ('pradosh',   'Puja — Pradosh Kaal')]),
+    ('Choti Diwali',         [('pradosh',   'Puja — Pradosh Kaal')]),
+    ('Govardhan Puja',       [('pratah',    'Puja — Pratah Kaal')]),
+    ('Bhai Dooj',            [('aparahna',  'Tilak Ceremony — Aparahna Kaal')]),
+    # Other major
+    ('Holika Dahan',         [('pradosh',   'Holika Dahan — Pradosh Kaal')]),
+    ('Janmashtami',          [('nishita',   'Krishna Janma — Nishita Kaal (Midnight)')]),
+    ('Maha Shivratri',       [('nishita',   'Shiv Puja — Nishita Kaal (Midnight)')]),
+    ('Ram Navami',           [('madhyahna', 'Ram Janma — Madhyahna Kaal (Midday)')]),
+    ('Ganesh Chaturthi',     [('madhyahna', 'Ganesh Sthapana — Madhyahna Kaal')]),
+    ('Vijaya Dashami',       [('aparahna',  'Vijayadashami Muhurta — Aparahna Kaal')]),
+    ('Dussehra',             [('aparahna',  'Dussehra Puja — Aparahna Kaal')]),
+    ('Makar Sankranti',      [('pratah',    'Punya Kaal — Sunrise + 2 hrs')]),
+    ('Baisakhi',             [('pratah',    'Auspicious Bath — Pratah Kaal')]),
+    ('Vishu',                [('pratah',    'Vishukkani Darshan — Pratah Kaal')]),
+    ('Mesha Sankranti',      [('pratah',    'Punya Kaal — Pratah Kaal')]),
+    ('Raksha Bandhan',       [('aparahna',  'Rakhi Tying — Aparahna Kaal')]),
+    ('Akshaya Tritiya',      [('abhijit',   'Auspicious Activities — Abhijit Muhurta')]),
+    ('Vasant Panchami',      [('pratah',    'Saraswati Puja — Pratah Kaal')]),
+    ('Ganga Dussehra',       [('abhijit',   'Ganga Snan — Abhijit Muhurta')]),
+    ('Dev Uthani Ekadashi',  [('pradosh',   'Tulsi Vivah — Pradosh Kaal')]),
+    ('Dev Diwali',           [('moonrise',  'Deep Daan — at Moonrise')]),
+    ('Kartik Purnima',       [('moonrise',  'Deep Daan — at Moonrise')]),
+    ('Sharad Purnima',       [('moonrise',  'Kojagara Puja — at Moonrise')]),
+    ('Kojagara',             [('moonrise',  'Kojagara Puja — at Moonrise')]),
+    ('Guru Purnima',         [('madhyahna', 'Guru Puja — Madhyahna Kaal')]),
+    ('Maha Navami',          [('aparahna',  'Navami Havan — Aparahna Kaal')]),
+    ('Ghatasthapana',        [('pratah',    'Ghatasthapana — first 1/10th of day')]),
+    ('Durgashtami',          [('sandhya',   'Sandhi Puja — Sandhya Kaal')]),
+    ('Guru Nanak Jayanti',   [('pratah',    'Prakash Utsav — Pratah Kaal')]),
+]
+
+
+def _compute_puja_windows(festival_str: str, jd_sr: float, jd_ss: float,
+                          lat: float, lon: float, tz_str: str) -> list[dict]:
+    """Return location-adjusted puja timing windows for this festival string."""
+    if not festival_str:
+        return []
+
+    day_dur    = jd_ss - jd_sr
+    solar_noon = (jd_sr + jd_ss) / 2
+
+    # Next sunrise for Nishita Kaal (midnight)
+    try:
+        jd_next_sr = _rise_set(jd_ss + 0.5, swe.SUN, swe.CALC_RISE, lat, lon)
+    except Exception:
+        jd_next_sr = jd_ss + (jd_ss - jd_sr)   # fallback: mirror of day duration
+    night_dur  = jd_next_sr - jd_ss
+    midnight   = jd_ss + night_dur / 2
+
+    def _window(rule: str) -> tuple[str | None, str | None]:
+        if rule == 'pratah':
+            return _fmt(jd_sr, tz_str), _fmt(jd_sr + day_dur / 5, tz_str)
+        if rule == 'madhyahna':
+            return _fmt(jd_sr + 2 * day_dur / 5, tz_str), _fmt(jd_sr + 3 * day_dur / 5, tz_str)
+        if rule == 'aparahna':
+            return _fmt(jd_sr + 3 * day_dur / 5, tz_str), _fmt(jd_sr + 4 * day_dur / 5, tz_str)
+        if rule == 'sandhya':
+            return _fmt(jd_sr + 4 * day_dur / 5, tz_str), _fmt(jd_ss, tz_str)
+        if rule == 'pradosh':
+            return _fmt(jd_ss, tz_str), _fmt(jd_ss + 144 / 1440, tz_str)
+        if rule == 'nishita':
+            return _fmt(midnight - 24 / 1440, tz_str), _fmt(midnight + 24 / 1440, tz_str)
+        if rule == 'abhijit':
+            return _fmt(solar_noon - 24 / 1440, tz_str), _fmt(solar_noon + 24 / 1440, tz_str)
+        if rule == 'moonrise':
+            try:
+                jd_mr = _rise_set(jd_sr, swe.MOON, swe.CALC_RISE, lat, lon)
+                return _fmt(jd_mr, tz_str), _fmt(jd_mr + 72 / 1440, tz_str)
+            except Exception:
+                return None, None
+        return None, None
+
+    windows: list[dict] = []
+    seen_labels: set[str] = set()
+    for keyword, rules_list in _PUJA_RULES:
+        if keyword in festival_str:
+            for rule, label in rules_list:
+                if label in seen_labels:
+                    continue
+                start, end = _window(rule)
+                if start and end:
+                    windows.append({'name': label, 'start': start, 'end': end})
+                    seen_labels.add(label)
+    return windows
+
+
 # ── Yearly Festival Calendar ───────────────────────────────────────────────────
 
 def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list[dict]:
@@ -1015,7 +1137,8 @@ def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list
 
     Each entry has: date, day_of_week, masa, tithi, tithi_num, paksha,
     nakshatra, festival (string, may have multiple separated by ' · '),
-    special_yogas (list).  Days with no festival and no special yoga are omitted.
+    special_yogas (list), puja_timings (list of {name, start, end}).
+    Days with no festival and no special yoga are omitted.
     """
     from datetime import date as date_cls, timedelta as td
     festivals = []
@@ -1024,6 +1147,11 @@ def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list
     while d < end:
         info = _quick_day(d.isoformat(), lat, lon, tz_str)
         if info and (info.get('festival') or info.get('special_yogas')):
+            puja = _compute_puja_windows(
+                info.get('festival', ''),
+                info['jd_sr'], info['jd_ss'],
+                lat, lon, tz_str,
+            )
             festivals.append({
                 'date':          info['date'],
                 'day_of_week':   info['day_of_week'],
@@ -1034,6 +1162,7 @@ def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list
                 'nakshatra':     info['nakshatra'],
                 'festival':      info.get('festival', ''),
                 'special_yogas': info.get('special_yogas', []),
+                'puja_timings':  puja,
             })
         d += td(days=1)
     return festivals

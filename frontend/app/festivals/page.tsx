@@ -2,6 +2,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '@/components/LanguageProvider'
 
+interface PujaTiming {
+  name: string
+  start: string
+  end: string
+}
+
 interface FestivalDay {
   date: string
   day_of_week: string
@@ -12,6 +18,7 @@ interface FestivalDay {
   nakshatra: string
   festival: string
   special_yogas: string[]
+  puja_timings: PujaTiming[]
 }
 
 interface GeoResult { name: string; lat: number; lon: number; tz: string }
@@ -272,6 +279,21 @@ export default function FestivalsPage() {
                                   }`}>
                                     ✦ {yoga}
                                   </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Puja timing windows */}
+                            {f.puja_timings && f.puja_timings.length > 0 && (
+                              <div className="mt-2.5 space-y-1">
+                                {f.puja_timings.map((pt, k) => (
+                                  <div key={k} className="flex items-center gap-2 text-xs">
+                                    <span className="text-saffron-400/70">🕯</span>
+                                    <span className="text-gray-300/80 leading-tight">{pt.name}</span>
+                                    <span className="ml-auto shrink-0 font-medium text-gold-400 tabular-nums">
+                                      {pt.start} – {pt.end}
+                                    </span>
+                                  </div>
                                 ))}
                               </div>
                             )}

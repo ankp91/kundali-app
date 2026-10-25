@@ -245,7 +245,7 @@ The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of i
     },
     festivals: {
       pageTitle: 'Hindu Festival Calendar',
-      pageSubtitle: 'All major festivals, Ekadashis, Purnimas, and special yogas — computed from precise panchang',
+      pageSubtitle: 'All major festivals, Ekadashis, Purnimas, and special yogas — with puja muhurta timings for your location',
       locationLabel: 'Your Location', locationPlaceholder: 'City, Country (e.g. Delhi, India)',
       loadingLocation: 'Finding location...', search: '🔍',
       allMonths: 'All', loading: 'Computing festival calendar...',
@@ -501,7 +501,7 @@ The goal? A sattvic (calm, intelligent, kind) child. The method is 9 months of i
     },
     festivals: {
       pageTitle: 'हिंदू पर्व कैलेंडर',
-      pageSubtitle: 'सभी प्रमुख त्योहार, एकादशी, पूर्णिमा और विशेष योग — सटीक पंचांग से गणना',
+      pageSubtitle: 'सभी प्रमुख त्योहार, एकादशी, पूर्णिमा और विशेष योग — आपके स्थान के लिए पूजा मुहूर्त सहित',
       locationLabel: 'आपका स्थान', locationPlaceholder: 'शहर, देश (जैसे दिल्ली, भारत)',
       loadingLocation: 'स्थान ढूंढा जा रहा है...', search: '🔍',
       allMonths: 'सभी', loading: 'पर्व कैलेंडर गणना हो रही है...',
