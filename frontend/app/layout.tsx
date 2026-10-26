@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import { LanguageProvider } from '@/components/LanguageProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
+import { AuthProvider } from '@/components/AuthProvider'
 import NavBar from '@/components/NavBar'
 
 export const metadata: Metadata = {
@@ -23,8 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-deepblue-950 transition-colors duration-300">
         <ThemeProvider>
           <LanguageProvider>
-            <NavBar />
-            <main>{children}</main>
+            <AuthProvider>
+              <NavBar />
+              <main>{children}</main>
+            </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>
       </body>

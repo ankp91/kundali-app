@@ -1,3 +1,9 @@
+# Firebase service account — never commit
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+
 # Python
 __pycache__/
 *.pyc

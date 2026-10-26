@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "axios": "^1.7.2",
+    "firebase": "^13.1.0",
     "html-to-image": "^1.11.13",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.8",

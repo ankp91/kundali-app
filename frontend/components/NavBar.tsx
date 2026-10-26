@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useLanguage } from './LanguageProvider'
 import { useTheme } from './ThemeProvider'
+import { useAuth } from './AuthProvider'
 
 const NAV_LINKS = (t: any) => [
   { href: '/learn',        label: t.nav.learn },
@@ -19,6 +20,7 @@ const NAV_LINKS = (t: any) => [
 export default function NavBar() {
   const { t, lang, toggle } = useLanguage()
   const { isDark, toggleTheme } = useTheme()
+  const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
 
   const links = NAV_LINKS(t)
@@ -50,6 +52,21 @@ export default function NavBar() {
             style={{ color: lang === 'hi' ? '#f59e0b' : '#94a3b8' }}>
             {lang === 'en' ? 'हिं' : 'EN'}
           </button>
+          {/* Auth button */}
+          {user ? (
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:block text-xs text-gray-300/50 max-w-[120px] truncate">{user.email}</span>
+              <button onClick={signOut}
+                className="text-xs px-3 py-1.5 rounded-full border border-saffron-700/50 hover:border-red-400 text-saffron-400 hover:text-red-400 transition">
+                Sign out
+              </button>
+            </div>
+          ) : (
+            <a href="/login"
+              className="text-xs font-semibold px-3 py-1.5 rounded-full bg-saffron-600/20 border border-saffron-600/50 text-saffron-400 hover:bg-saffron-600/40 transition">
+              Sign in
+            </a>
+          )}
           {/* Hamburger — mobile only */}
           <button onClick={() => setOpen(o => !o)}
             className="lg:hidden p-2 rounded-lg border border-saffron-700/40 hover:border-gold-400 transition"
