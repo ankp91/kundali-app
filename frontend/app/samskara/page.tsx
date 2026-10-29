@@ -127,7 +127,7 @@ export default function SamskaraPage() {
           <div>
             <label className="block text-sm font-medium text-gray-200 mb-1">{s.babyDob}</label>
             <input type="date" value={babyDob} onChange={e => setBabyDob(e.target.value)}
-              className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:light] dark:[color-scheme:dark]" />
+              className="w-full min-w-0 appearance-none bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2 text-gray-200 text-sm focus:border-gold-400 focus:outline-none [color-scheme:light] dark:[color-scheme:dark]" />
           </div>
 
           {/* Gender */}

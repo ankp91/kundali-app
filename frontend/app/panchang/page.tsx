@@ -281,7 +281,7 @@ export default function PanchangPage() {
               <input
                 type="date" value={date}
                 onChange={e => onDateChange(e.target.value)}
-                className="w-full min-w-0 block bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-gold-400 [color-scheme:light] dark:[color-scheme:dark]"
+                className="w-full min-w-0 block appearance-none bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-gold-400 [color-scheme:light] dark:[color-scheme:dark]"
               />
             </div>
             <div className="flex-[2]">
@@ -857,11 +857,11 @@ export default function PanchangPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="text-xs text-saffron-400/70 block mb-1">{p.fromLabel}</label>
-                        <input type="date" value={muhurtaFrom} onChange={e => setMuhurtaFrom(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
+                        <input type="date" value={muhurtaFrom} onChange={e => setMuhurtaFrom(e.target.value)} className="w-full min-w-0 appearance-none bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
                       </div>
                       <div>
                         <label className="text-xs text-saffron-400/70 block mb-1">{p.toLabel}</label>
-                        <input type="date" value={muhurtaTo} onChange={e => setMuhurtaTo(e.target.value)} className="w-full bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
+                        <input type="date" value={muhurtaTo} onChange={e => setMuhurtaTo(e.target.value)} className="w-full min-w-0 appearance-none bg-deepblue-800 border border-saffron-700/30 rounded-lg px-3 py-2 text-sm text-gray-200 [color-scheme:light] dark:[color-scheme:dark]" />
                       </div>
                     </div>
                   </div>
