@@ -47,7 +47,7 @@ export default function ChartPage() {
   const [chart, setChart] = useState<Record<string, unknown> | null>(null)
   const [selectedPlanet, setSelectedPlanet] = useState<string | null>(null)
   const [selectedHouse, setSelectedHouse] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals' | 'yogas' | 'transits' | 'ashtakavarga' | 'remedies' | 'shadbala' | 'transit-calendar' | 'doshas'>('interpret')
+  const [activeTab, setActiveTab] = useState<'interpret' | 'chat' | 'dasha' | 'divisionals' | 'yogas' | 'transits' | 'ashtakavarga' | 'remedies' | 'shadbala' | 'transit-calendar' | 'doshas' | 'karma'>('interpret')
   const [pdfLoading, setPdfLoading] = useState(false)
   const [saveMsg, setSaveMsg] = useState<string | null>(null)
   const [copyLinkMsg, setCopyLinkMsg] = useState<string | null>(null)
@@ -58,7 +58,10 @@ export default function ChartPage() {
   const [doshaError, setDoshaError] = useState<string | null>(null)
   const [saturnEvents, setSaturnEvents] = useState<SaturnEvent[] | null>(null)
   const [timelineLoading, setTimelineLoading] = useState(false)
-  const { t } = useLanguage()
+  const [karmaData, setKarmaData] = useState<Record<string, unknown> | null>(null)
+  const [karmaLoading, setKarmaLoading] = useState(false)
+  const [karmaError, setKarmaError] = useState<string | null>(null)
+  const { t, lang } = useLanguage()
 
   useEffect(() => {
     const stored = sessionStorage.getItem('kundali')
@@ -201,11 +204,39 @@ export default function ChartPage() {
     }
   }
 
+  const fetchKarma = async () => {
+    if (!chart) return
+    const bi = chart.birth_info as { date: string; time: string; place: string } | undefined
+    if (!bi) return
+    setKarmaLoading(true)
+    setKarmaError(null)
+    try {
+      const res = await fetch('/api/past-life', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: (chart.name as string) || 'Unknown',
+          birth_date: bi.date,
+          birth_time: bi.time,
+          birth_place: bi.place,
+          language: lang,
+        }),
+      })
+      if (!res.ok) throw new Error(await res.text())
+      setKarmaData(await res.json())
+    } catch (e) {
+      setKarmaError(e instanceof Error ? e.message : 'Failed to load karma analysis.')
+    } finally {
+      setKarmaLoading(false)
+    }
+  }
+
   const tabs = [
     { key: 'interpret', label: t.chart.interpret },
     { key: 'chat', label: t.chart.chat },
     { key: 'dasha', label: t.chart.dasha },
     { key: 'doshas', label: t.doshas.tabLabel },
+    { key: 'karma', label: lang === 'hi' ? '🔮 पूर्व जन्म' : '🔮 Karma' },
     { key: 'divisionals', label: 'Divisionals' },
     { key: 'yogas', label: 'Yogas' },
     { key: 'transits', label: 'Transits' },
@@ -563,6 +594,148 @@ export default function ChartPage() {
               )}
             </div>
           )}
+          {activeTab === 'karma' && (
+            <div className="space-y-4">
+              {/* Header card */}
+              <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-5">
+                <h3 className="text-gold-400 font-bold text-lg mb-1">🔮 {lang === 'hi' ? 'पूर्व जन्म कर्म विश्लेषण' : 'Past Life Karma Analysis'}</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  {lang === 'hi'
+                    ? 'BPHS अध्याय 22, 47, 49 और जैमिनी सूत्र 1.1.27-32 पर आधारित वैदिक विश्लेषण।'
+                    : 'Vedic analysis based on BPHS Ch. 22, 47, 49 and Jaimini Sutras 1.1.27-32.'}
+                </p>
+                {!karmaData && !karmaLoading && (
+                  <button
+                    onClick={fetchKarma}
+                    className="bg-saffron-600 hover:bg-saffron-700 text-white font-medium px-5 py-2 rounded-lg transition"
+                  >
+                    {lang === 'hi' ? 'कर्म विश्लेषण करें' : 'Analyse Past Life Karma'}
+                  </button>
+                )}
+                {karmaLoading && (
+                  <p className="text-saffron-400 animate-pulse text-sm">
+                    {lang === 'hi' ? 'कर्म विश्लेषण हो रहा है…' : 'Calculating karmic indicators…'}
+                  </p>
+                )}
+                {karmaError && <p className="text-red-400 text-sm mt-2">{karmaError}</p>}
+              </div>
+
+              {karmaData && (() => {
+                const ketu = karmaData.ketu as { house: number; sign: string; sign_hi: string; degrees: number; theme: string }
+                const rahu = karmaData.rahu as { house: number; sign: string; sign_hi: string; degrees: number }
+                const fifth = karmaData.fifth_house as { sign: string; sign_hi: string; lord: string; lord_house: number; lord_sign: string; planets_in_5th: string[] }
+                const twelfth = karmaData.twelfth_house as { sign: string; sign_hi: string; lord: string; lord_house: number; lord_sign: string; planets_in_12th: string[] }
+                const ak = karmaData.atmakaraka as { planet: string; degrees: number; house: number; sign: string; sign_hi: string; meaning: string }
+                const bb = karmaData.bhrigu_bindu as { longitude: number; sign: string; sign_hi: string; house: number; degrees: number }
+                const interpretation = karmaData.ai_interpretation as string
+
+                return (
+                  <>
+                    {/* Key indicators grid */}
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Ketu */}
+                      <div className="bg-deepblue-900 border border-purple-700/30 rounded-xl p-4">
+                        <div className="text-purple-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                          {lang === 'hi' ? 'केतु — पूर्व जन्म' : 'Ketu — Past Life'}
+                        </div>
+                        <div className="text-gold-400 font-bold text-base">
+                          {ketu.house}{['st','nd','rd','th'][ketu.house > 3 ? 3 : ketu.house - 1]} {lang === 'hi' ? 'भाव' : 'House'}
+                        </div>
+                        <div className="text-gray-300 text-sm">{ketu.sign} ({ketu.sign_hi})</div>
+                        <div className="text-gray-500 text-xs mt-1">{ketu.degrees.toFixed(1)}°</div>
+                      </div>
+                      {/* Rahu */}
+                      <div className="bg-deepblue-900 border border-orange-700/30 rounded-xl p-4">
+                        <div className="text-orange-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                          {lang === 'hi' ? 'राहु — भविष्य दिशा' : 'Rahu — Future Direction'}
+                        </div>
+                        <div className="text-gold-400 font-bold text-base">
+                          {rahu.house}{['st','nd','rd','th'][rahu.house > 3 ? 3 : rahu.house - 1]} {lang === 'hi' ? 'भाव' : 'House'}
+                        </div>
+                        <div className="text-gray-300 text-sm">{rahu.sign} ({rahu.sign_hi})</div>
+                        <div className="text-gray-500 text-xs mt-1">{rahu.degrees.toFixed(1)}°</div>
+                      </div>
+                      {/* Atmakaraka */}
+                      <div className="bg-deepblue-900 border border-gold-400/30 rounded-xl p-4">
+                        <div className="text-gold-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                          {lang === 'hi' ? 'आत्मकारक' : 'Atmakaraka'}
+                        </div>
+                        <div className="text-gold-400 font-bold text-base">{ak.planet}</div>
+                        <div className="text-gray-300 text-sm">{ak.sign} ({ak.sign_hi}) · {lang === 'hi' ? 'भाव' : 'H'}{ak.house}</div>
+                        <div className="text-gray-500 text-xs mt-1">{ak.degrees.toFixed(1)}° — {lang === 'hi' ? 'आत्मा का प्राथमिक ग्रह' : "soul's primary planet"}</div>
+                      </div>
+                      {/* Bhrigu Bindu */}
+                      <div className="bg-deepblue-900 border border-emerald-700/30 rounded-xl p-4">
+                        <div className="text-emerald-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                          {lang === 'hi' ? 'भृगु बिंदु' : 'Bhrigu Bindu'}
+                        </div>
+                        <div className="text-gold-400 font-bold text-base">
+                          {bb.sign} ({bb.sign_hi})
+                        </div>
+                        <div className="text-gray-300 text-sm">{lang === 'hi' ? 'भाव' : 'House'} {bb.house}</div>
+                        <div className="text-gray-500 text-xs mt-1">{bb.degrees.toFixed(1)}° — {lang === 'hi' ? 'कर्म सक्रियण बिंदु' : 'karmic activation point'}</div>
+                      </div>
+                    </div>
+
+                    {/* 5th & 12th houses */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-4">
+                        <div className="text-saffron-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                          {lang === 'hi' ? 'पूर्व पुण्य (5वाँ भाव)' : 'Purva Punya (5th House)'}
+                        </div>
+                        <div className="text-gray-300 text-sm">{fifth.sign} ({fifth.sign_hi})</div>
+                        <div className="text-gray-400 text-xs mt-1">
+                          {lang === 'hi' ? 'स्वामी:' : 'Lord:'} {fifth.lord} → {fifth.lord_house}{lang === 'hi' ? 'वाँ भाव' : 'H'} {fifth.lord_sign}
+                        </div>
+                        {fifth.planets_in_5th.length > 0 && (
+                          <div className="text-gray-500 text-xs mt-1">{fifth.planets_in_5th.join(', ')}</div>
+                        )}
+                      </div>
+                      <div className="bg-deepblue-900 border border-saffron-700/20 rounded-xl p-4">
+                        <div className="text-saffron-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                          {lang === 'hi' ? 'मोक्ष कर्म (12वाँ भाव)' : 'Moksha Karma (12th House)'}
+                        </div>
+                        <div className="text-gray-300 text-sm">{twelfth.sign} ({twelfth.sign_hi})</div>
+                        <div className="text-gray-400 text-xs mt-1">
+                          {lang === 'hi' ? 'स्वामी:' : 'Lord:'} {twelfth.lord} → {twelfth.lord_house}{lang === 'hi' ? 'वाँ भाव' : 'H'} {twelfth.lord_sign}
+                        </div>
+                        {twelfth.planets_in_12th.length > 0 && (
+                          <div className="text-gray-500 text-xs mt-1">{twelfth.planets_in_12th.join(', ')}</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* AI Interpretation */}
+                    {interpretation && (
+                      <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl p-5">
+                        <h4 className="text-gold-400 font-semibold mb-3 text-sm">
+                          {lang === 'hi' ? '✨ कर्म विश्लेषण' : '✨ Karmic Reading'}
+                        </h4>
+                        <div className="prose prose-sm prose-invert max-w-none text-gray-300 leading-relaxed whitespace-pre-wrap text-sm">
+                          {interpretation}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Source note */}
+                    <p className="text-gray-600 text-xs text-center px-4">
+                      {lang === 'hi'
+                        ? 'स्रोत: BPHS अध्याय 22, 47, 49 · जैमिनी सूत्र 1.1.27-32 · भृगु बिंदु (व्यावहारिक परंपरा)'
+                        : 'Sources: BPHS Ch. 22, 47, 49 · Jaimini Sutras 1.1.27-32 · Bhrigu Bindu (Practitioner tradition)'}
+                    </p>
+
+                    <button
+                      onClick={() => setKarmaData(null)}
+                      className="text-saffron-400 hover:text-gold-400 text-sm transition"
+                    >
+                      ↺ {lang === 'hi' ? 'पुनः विश्लेषण करें' : 'Regenerate'}
+                    </button>
+                  </>
+                )
+              })()}
+            </div>
+          )}
+
         </div>
       </div>
 

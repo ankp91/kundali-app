@@ -793,3 +793,27 @@ def festivals(year: int, lat: float, lon: float, tz: str):
         return {"year": year, "festivals": data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Past Life Karma ───────────────────────────────────────────────────────────
+
+class PastLifeRequest(BaseModel):
+    name: str
+    birth_date: str
+    birth_time: str
+    birth_place: str
+    language: str = "en"
+
+
+@app.post("/api/past-life")
+def past_life(req: PastLifeRequest):
+    from astro import calculate_kundali
+    from past_life import calculate_past_life, generate_past_life_interpretation
+    try:
+        chart = calculate_kundali(req.birth_date, req.birth_time, req.birth_place)
+        chart["name"] = req.name
+        indicators = calculate_past_life(chart)
+        interpretation = generate_past_life_interpretation(indicators, req.name, req.language)
+        return {**indicators, "ai_interpretation": interpretation}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))

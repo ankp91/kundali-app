@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useLanguage } from '@/components/LanguageProvider'
+import { tv } from '@/lib/vedic-translations'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -127,7 +128,7 @@ function computeLiveVedic(sunrise: string, sunset: string, ghatiDurMin: number, 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function PanchangPage() {
-  const { t } = useLanguage()
+  const { t, lang } = useLanguage()
   const p = t.panchang
   const [date, setDate]         = useState(TODAY)
   const [query, setQuery]       = useState('')
@@ -350,17 +351,16 @@ export default function PanchangPage() {
                 <div className="bg-deepblue-900 border border-saffron-700/30 rounded-xl overflow-hidden">
                   <div className="px-4 py-3 border-b border-saffron-700/20">
                     <h2 className="text-gold-400 font-bold text-sm">
-                      {data.date} — {data.vara.name}{' '}
-                      <span className="text-saffron-400/60 font-normal">({data.vara.name_hi})</span>
+                      {data.date} — {lang === 'hi' ? data.vara.name_hi : data.vara.name}
                     </h2>
-                    <p className="text-xs text-gray-500 mt-0.5">{p.lordOfDay}: {data.vara.lord}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{p.lordOfDay}: {tv(data.vara.lord, lang)}</p>
                   </div>
                   <div className="divide-y divide-saffron-700/10">
                     {[
-                      { label: p.tithi,     value: `${data.tithi.paksha} ${data.tithi.name}`,   end: data.tithi.end_time,     sub: `${data.tithi.number}/30` },
-                      { label: p.nakshatra, value: data.nakshatra.name,                          end: data.nakshatra.end_time, sub: `${data.nakshatra.name_hi} · ${p.pada} ${data.nakshatra.pada}` },
-                      { label: p.yoga,      value: data.yoga.name,                               end: '',                      sub: `${data.yoga.number}/27` },
-                      { label: p.karana,    value: data.karana.name,                             end: '',                      sub: p.halfTithi },
+                      { label: p.tithi,     value: `${tv(data.tithi.paksha, lang)} ${tv(data.tithi.name, lang)}`,   end: data.tithi.end_time,     sub: `${data.tithi.number}/30` },
+                      { label: p.nakshatra, value: lang === 'hi' ? data.nakshatra.name_hi : data.nakshatra.name, end: data.nakshatra.end_time, sub: `${lang === 'hi' ? data.nakshatra.name : data.nakshatra.name_hi} · ${p.pada} ${data.nakshatra.pada}` },
+                      { label: p.yoga,      value: tv(data.yoga.name, lang),                     end: '',                      sub: `${data.yoga.number}/27` },
+                      { label: p.karana,    value: tv(data.karana.name, lang),                   end: '',                      sub: p.halfTithi },
                     ].map(({ label, value, end, sub }) => (
                       <div key={label} className="flex items-center justify-between px-4 py-3">
                         <span className="text-saffron-400/70 text-sm w-24">{label}</span>
@@ -383,12 +383,12 @@ export default function PanchangPage() {
                   </div>
                   <div className="grid grid-cols-2 divide-x divide-saffron-700/10">
                     {[
-                      { label: p.vikramSamvat, value: String(data.samvat.vikram) },
-                      { label: p.shakaSamvat,  value: String(data.samvat.shaka)  },
-                      { label: p.ritu,         value: data.ritu                  },
-                      { label: p.ayana,        value: data.ayana                 },
-                      { label: p.dinamana,     value: data.dinamana              },
-                      { label: p.ratrimana,    value: data.ratrimana             },
+                      { label: p.vikramSamvat, value: String(data.samvat.vikram)  },
+                      { label: p.shakaSamvat,  value: String(data.samvat.shaka)   },
+                      { label: p.ritu,         value: tv(data.ritu, lang)         },
+                      { label: p.ayana,        value: tv(data.ayana, lang)        },
+                      { label: p.dinamana,     value: data.dinamana               },
+                      { label: p.ratrimana,    value: data.ratrimana              },
                     ].map(({ label, value }) => (
                       <div key={label} className="px-4 py-2.5 flex items-center justify-between">
                         <span className="text-saffron-400/70 text-xs">{label}</span>
@@ -475,7 +475,7 @@ export default function PanchangPage() {
                           <span className="text-gray-600 text-xs w-4">{i + 1}</span>
                           <div className="flex-1 flex items-center gap-2 flex-wrap">
                             <span className={`text-sm font-medium px-2 py-0.5 rounded border ${NATURE_STYLE[slot.nature]}`}>
-                              {slot.name}
+                              {tv(slot.name, lang)}
                             </span>
                             {slot.active && <span className="text-xs text-gold-400 font-bold">{p.nowIndicator}</span>}
                             {/* Overlap warnings */}
@@ -525,7 +525,7 @@ export default function PanchangPage() {
                       <div key={i} className={`flex items-center gap-3 px-4 py-2 ${h.active ? 'bg-saffron-600/10' : ''}`}>
                         <span className="text-gray-500 text-xs w-6">{h.hour}</span>
                         <span className="text-sm font-bold w-20" style={{ color: PLANET_COLOR[h.planet] || '#aaa' }}>
-                          {h.planet}
+                          {tv(h.planet, lang)}
                         </span>
                         {h.active && <span className="text-xs text-gold-400 font-bold">{p.nowIndicator}</span>}
                         <span className="ml-auto text-gray-400 text-xs">{h.start} – {h.end}</span>
@@ -570,14 +570,14 @@ export default function PanchangPage() {
                   </p>
                   {/* Tithi details row — like Drik Panchang */}
                   <div className="mt-3 pt-3 border-t border-saffron-700/20 text-sm text-gray-300">
-                    {data.masa && <>{data.masa} · </>}{data.tithi.paksha} {data.tithi.name}
+                    {data.masa && <>{tv(data.masa, lang)} · </>}{tv(data.tithi.paksha, lang)} {tv(data.tithi.name, lang)}
                     <span className="mx-2 text-saffron-700/50">·</span>
                     {data.samvat.vikram} {p.vikramaSamvat}
                     <span className="mx-2 text-saffron-700/50">·</span>
-                    {data.vara.name}
+                    {lang === 'hi' ? data.vara.name_hi : data.vara.name}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Nakshatra: {data.nakshatra.name} ({data.nakshatra.name_hi}) · Yoga: {data.yoga.name}
+                    Nakshatra: {lang === 'hi' ? data.nakshatra.name_hi : data.nakshatra.name} ({lang === 'hi' ? data.nakshatra.name : data.nakshatra.name_hi}) · Yoga: {tv(data.yoga.name, lang)}
                   </div>
                   <div className="text-xs text-saffron-400/40 mt-2">
                     {(() => {
@@ -763,15 +763,15 @@ export default function PanchangPage() {
                           {/* Panchang details */}
                           <div className="space-y-1.5">
                             {[
-                              { label: p.masa, value: selectedDay.masa || '—' },
-                              { label: p.paksha, value: selectedDay.paksha },
-                              { label: p.vara,   value: vara ? `${vara.name} (${vara.lord})` : (selectedDay.vara || selectedDay.day_of_week) },
-                              { label: p.tithi,  value: tithi ? `${tithi.paksha} ${tithi.name} · ${p.upto} ${tithi.end_time}` : `${selectedDay.paksha} ${selectedDay.tithi}` },
-                              { label: p.nakshatra, value: nak ? `${nak.name} (${nak.name_hi}) ${p.pada} ${nak.pada} · ${p.upto} ${nak.end_time}` : `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
-                              { label: p.yoga,   value: yoga ? `${yoga.name} · ${p.upto} ${(f?.vedic_time as Record<string,unknown> | null)?.ghati ?? ''}` : selectedDay.yoga },
-                              { label: p.karana, value: karana ? (karana.name as string) : '—' },
-                              { label: p.ritu,   value: (f?.ritu as string) || '—' },
-                              { label: p.ayana,  value: (f?.ayana as string) || '—' },
+                              { label: p.masa, value: tv(selectedDay.masa || '—', lang) },
+                              { label: p.paksha, value: tv(selectedDay.paksha, lang) },
+                              { label: p.vara,   value: vara ? `${lang === 'hi' ? vara.name_hi : vara.name} (${tv(vara.lord, lang)})` : (selectedDay.vara || selectedDay.day_of_week) },
+                              { label: p.tithi,  value: tithi ? `${tv(tithi.paksha as string, lang)} ${tv(tithi.name as string, lang)} · ${p.upto} ${tithi.end_time}` : `${tv(selectedDay.paksha, lang)} ${tv(selectedDay.tithi, lang)}` },
+                              { label: p.nakshatra, value: nak ? `${lang === 'hi' ? nak.name_hi : nak.name} (${lang === 'hi' ? nak.name : nak.name_hi}) ${p.pada} ${nak.pada} · ${p.upto} ${nak.end_time}` : `${selectedDay.nakshatra} (${selectedDay.nakshatra_hi})` },
+                              { label: p.yoga,   value: yoga ? `${tv(yoga.name as string, lang)} · ${p.upto} ${(f?.vedic_time as Record<string,unknown> | null)?.ghati ?? ''}` : tv(selectedDay.yoga, lang) },
+                              { label: p.karana, value: karana ? tv(karana.name as string, lang) : '—' },
+                              { label: p.ritu,   value: tv((f?.ritu as string) || '—', lang) },
+                              { label: p.ayana,  value: tv((f?.ayana as string) || '—', lang) },
                             ].map(({ label, value }) => (
                               <div key={label} className="flex items-baseline justify-between py-1 border-b border-saffron-700/10">
                                 <span className="text-saffron-400/70 text-xs w-32 shrink-0">{label}</span>
