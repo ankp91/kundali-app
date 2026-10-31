@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
     lon:  searchParams.get('lon')  || '',
     tz:   searchParams.get('tz')   || '',
   })
-  const res = await fetch(`${BACKEND}/api/festivals?${params}`)
+  const res = await fetch(`${BACKEND}/api/festivals?${params}`, { cache: 'no-store' })
   if (!res.ok) return NextResponse.json({ error: 'Backend error' }, { status: res.status })
   return NextResponse.json(await res.json())
 }

@@ -8,6 +8,6 @@ export async function GET(req: NextRequest) {
     lon:  searchParams.get('lon')  || '',
     tz:   searchParams.get('tz')   || '',
   })
-  const res = await fetch(`${BACKEND}/api/panchang/monthly?${params}`)
+  const res = await fetch(`${BACKEND}/api/panchang/monthly?${params}`, { cache: 'no-store' })
   return NextResponse.json(await res.json())
 }
