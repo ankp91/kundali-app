@@ -737,7 +737,7 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
         nak_i    = int(moon_sid / (360 / 27))
         yoga_i   = int(((sun_sid + moon_sid) % 360) / (360 / 27))
         paksha   = 'Shukla' if tithi_i < 15 else 'Krishna'
-        masa     = _get_masa(jd_noon)
+        masa     = _get_masa(jd_sr)
         festival = _get_festival(masa, paksha, tithi_i + 1)
 
         # ── Kshaya tithi detection ──────────────────────────────────────────
@@ -773,6 +773,9 @@ def _quick_day(date_str: str, lat: float, lon: float, tz_str: str) -> dict | Non
             if sun_sid_prev < deg <= sun_sid_noon or (sun_sid_prev > deg + 30 and sun_sid_noon < deg + 5):
                 festival = (festival + ' · ' + name) if festival else name
                 break
+        # ── Onam (Thiruonam) — Moon in Shravana nakshatra while Sun in Leo ────
+        if nak_i == 21 and int(sun_sid / 30) == 4:  # Shravana nak + Sun in Simha
+            festival = (festival + ' · Onam · Thiruonam') if festival else 'Onam · Thiruonam'
         # ── Pradosh correction for Diwali ──────────────────────────────────────
         # Traditional rule: Diwali (Lakshmi Puja) is observed on the day when
         # Amavasya is present at Pradosh Kaal (~45 min after sunset), NOT the
@@ -1193,7 +1196,7 @@ def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list
                 info['jd_sr'], info['jd_ss'],
                 lat, lon, tz_str,
             )
-            festivals.append({
+            entry = {
                 'date':          info['date'],
                 'day_of_week':   info['day_of_week'],
                 'masa':          info['masa'],
@@ -1204,7 +1207,25 @@ def get_yearly_festivals(year: int, lat: float, lon: float, tz_str: str) -> list
                 'festival':      info.get('festival', ''),
                 'special_yogas': info.get('special_yogas', []),
                 'puja_timings':  puja,
-            })
+            }
+            # Vriddhi dedup: if previous entry has same tithi (tithi spans two
+            # sunrises) OR same nakshatra (nakshatra spans two sunrises), remove
+            # duplicate festival names from day 2 — keep only new additions.
+            prev_same = festivals and (
+                (festivals[-1]['tithi_num'] == entry['tithi_num']
+                 and festivals[-1]['paksha'] == entry['paksha']
+                 and festivals[-1]['masa']   == entry['masa'])
+                or festivals[-1]['nakshatra'] == entry['nakshatra']
+            )
+            if prev_same:
+                prev_parts = {p.strip() for p in festivals[-1]['festival'].split(' · ') if p.strip()}
+                curr_parts = [p.strip() for p in entry['festival'].split(' · ') if p.strip()]
+                new_parts  = [p for p in curr_parts if p not in prev_parts]
+                entry['festival'] = ' · '.join(new_parts)
+                if not entry['festival'] and not entry['special_yogas']:
+                    d += td(days=1)
+                    continue
+            festivals.append(entry)
         d += td(days=1)
     return festivals
 
