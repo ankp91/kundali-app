@@ -13,6 +13,7 @@ import ShadbalaPanel from '@/components/ShadbalaPanel'
 import TransitCalendarPanel from '@/components/TransitCalendarPanel'
 import { useLanguage } from '@/components/LanguageProvider'
 import { downloadKundaliPDF } from '@/lib/downloadPDF'
+import UpgradePrompt from '@/components/UpgradePrompt'
 
 interface SavedKundali {
   id: string; name: string; date: string; place: string; savedAt: string; chart: Record<string, unknown>
@@ -61,6 +62,7 @@ export default function ChartPage() {
   const [karmaData, setKarmaData] = useState<Record<string, unknown> | null>(null)
   const [karmaLoading, setKarmaLoading] = useState(false)
   const [karmaError, setKarmaError] = useState<string | null>(null)
+  const [karmaUpgrade, setKarmaUpgrade] = useState<{ tier: string; count: number; limit: number; month: string } | null>(null)
   const { t, lang } = useLanguage()
 
   useEffect(() => {
@@ -222,6 +224,11 @@ export default function ChartPage() {
           language: lang,
         }),
       })
+      if (res.status === 402) {
+        const detail = (await res.json()).detail
+        setKarmaUpgrade(detail)
+        return
+      }
       if (!res.ok) throw new Error(await res.text())
       setKarmaData(await res.json())
     } catch (e) {
@@ -619,6 +626,10 @@ export default function ChartPage() {
                 )}
                 {karmaError && <p className="text-red-400 text-sm mt-2">{karmaError}</p>}
               </div>
+
+              {karmaUpgrade && (
+                <UpgradePrompt info={karmaUpgrade} onDismiss={() => setKarmaUpgrade(null)} />
+              )}
 
               {karmaData && (() => {
                 const ketu = karmaData.ketu as { house: number; sign: string; sign_hi: string; degrees: number; theme: string }

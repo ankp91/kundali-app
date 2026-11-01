@@ -4,7 +4,7 @@ import { useLanguage } from './LanguageProvider'
 import { useTheme } from './ThemeProvider'
 import { useAuth } from './AuthProvider'
 
-const NAV_LINKS = (t: any) => [
+const NAV_LINKS = (t: any, lang: string) => [
   { href: '/learn',        label: t.nav.learn },
   { href: '/match',        label: t.nav.match },
   { href: '/panchang',     label: t.nav.panchang },
@@ -15,6 +15,7 @@ const NAV_LINKS = (t: any) => [
   { href: '/garbh-sanskar',label: t.nav.garbhSanskar },
   { href: '/samskara',     label: t.nav.samskara },
   { href: '/festivals',    label: t.nav.festivals },
+  { href: '/pricing',      label: lang === 'hi' ? '✨ प्लान' : '✨ Pricing' },
 ]
 
 export default function NavBar() {
@@ -23,7 +24,7 @@ export default function NavBar() {
   const { user, signOut } = useAuth()
   const [open, setOpen] = useState(false)
 
-  const links = NAV_LINKS(t)
+  const links = NAV_LINKS(t, lang)
 
   return (
     <nav className="border-b border-saffron-700/30 bg-deepblue-900/80 backdrop-blur sticky top-0 z-50">

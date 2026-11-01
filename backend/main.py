@@ -107,14 +107,25 @@ async def parse_chart(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Could not parse chart: {e}")
 
 
+def _gate(claims):
+    """Check usage limit. Raises 402 if over limit, 401 if not logged in."""
+    if not claims:
+        raise HTTPException(status_code=401, detail="Login required")
+    allowed, info = check_and_increment_usage(claims["uid"])
+    if not allowed:
+        raise HTTPException(status_code=402, detail=info)
+
+
 @app.post("/api/interpret-full")
-def full_interpretation(chart_data: dict):
+async def full_interpretation(chart_data: dict, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     language = chart_data.pop("language", "en")
     return StreamingResponse(stream_full_chart(chart_data, language), media_type="text/plain; charset=utf-8")
 
 
 @app.post("/api/interpret-placement")
-def placement_interpretation(req: InterpretRequest):
+async def placement_interpretation(req: InterpretRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     return StreamingResponse(
         stream_placement(req.planet, req.sign, req.house, req.chart_data, req.language),
         media_type="text/plain; charset=utf-8",
@@ -122,7 +133,8 @@ def placement_interpretation(req: InterpretRequest):
 
 
 @app.post("/api/chat")
-def chat(req: ChatMessage):
+async def chat(req: ChatMessage, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     return StreamingResponse(
         stream_chat(req.message, req.chart_data, req.history, req.language, req.extra_chart),
         media_type="text/plain; charset=utf-8",
@@ -212,7 +224,8 @@ def transits(req: TransitsRequest):
 
 
 @app.post("/api/interpret-transits")
-def interpret_transits(req: TransitsRequest):
+async def interpret_transits(req: TransitsRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     try:
         asc_sign_num = req.chart_data.get("ascendant", {}).get("sign_num", 0)
         transit_data = get_current_transits(asc_sign_num)
@@ -230,7 +243,8 @@ class RemediesRequest(BaseModel):
 
 
 @app.post("/api/remedies")
-def remedies(req: RemediesRequest):
+async def remedies(req: RemediesRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     return StreamingResponse(
         stream_remedies(req.chart_data, req.language),
         media_type="text/plain; charset=utf-8",
@@ -262,7 +276,8 @@ class VarshaphalInterpretRequest(BaseModel):
 
 
 @app.post("/api/interpret-varshaphal")
-def interpret_varshaphal(req: VarshaphalInterpretRequest):
+async def interpret_varshaphal(req: VarshaphalInterpretRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     return StreamingResponse(
         stream_varshaphal(req.chart_data, req.year, req.language),
         media_type="text/plain; charset=utf-8",
@@ -364,7 +379,8 @@ class PrasnaInterpretRequest(BaseModel):
 
 
 @app.post("/api/interpret-prasna")
-def interpret_prasna_route(req: PrasnaInterpretRequest):
+async def interpret_prasna_route(req: PrasnaInterpretRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     return StreamingResponse(
         stream_prasna(req.question, req.chart_data, req.language),
         media_type="text/plain; charset=utf-8",
@@ -377,7 +393,8 @@ class ShadbalRequest(BaseModel):
 
 
 @app.post("/api/interpret-shadbala")
-def interpret_shadbala(req: ShadbalRequest):
+async def interpret_shadbala(req: ShadbalRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     shadbala = req.chart_data.get("shadbala", {})
     return StreamingResponse(
         stream_shadbala_insight(shadbala, req.chart_data, req.language),
@@ -805,8 +822,55 @@ class PastLifeRequest(BaseModel):
     language: str = "en"
 
 
+# ── Payments & Usage ─────────────────────────────────────────────────────────
+
+from fastapi import Depends, Request as FastAPIRequest
+from firebase_auth import require_auth, optional_auth
+from razorpay_payments import (
+    create_subscription, verify_webhook_signature, handle_webhook_event,
+    check_and_increment_usage, get_usage, RAZORPAY_KEY_ID,
+)
+
+
+class SubscriptionRequest(BaseModel):
+    plan_id: str
+    email: str
+
+
+@app.post("/api/payments/create-subscription")
+async def payments_create_subscription(req: SubscriptionRequest, claims: dict = Depends(require_auth)):
+    try:
+        uid = claims['uid']
+        sub = create_subscription(req.plan_id, req.email, uid)
+        return {"subscription_id": sub["id"], "key_id": RAZORPAY_KEY_ID}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.post("/api/payments/webhook")
+async def payments_webhook(request: FastAPIRequest):
+    body = await request.body()
+    sig = request.headers.get("X-Razorpay-Signature", "")
+    if not verify_webhook_signature(body, sig):
+        raise HTTPException(status_code=400, detail="Invalid webhook signature")
+    try:
+        import json
+        payload = json.loads(body)
+        event = payload.get("event", "")
+        handle_webhook_event(event, payload.get("payload", {}))
+    except Exception:
+        pass
+    return {"status": "ok"}
+
+
+@app.get("/api/usage")
+async def usage(claims: dict = Depends(require_auth)):
+    return get_usage(claims["uid"])
+
+
 @app.post("/api/past-life")
-def past_life(req: PastLifeRequest):
+async def past_life(req: PastLifeRequest, claims: dict = Depends(optional_auth)):
+    _gate(claims)
     from astro import calculate_kundali
     from past_life import calculate_past_life, generate_past_life_interpretation
     try:
