@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/components/AuthProvider'
 import { useLanguage } from '@/components/LanguageProvider'
+import { auth } from '@/lib/firebase'
 
 declare global {
   interface Window {
@@ -157,7 +158,7 @@ export default function PricingPage() {
     setError(null)
 
     try {
-      const token = await user.getIdToken()
+      const token = await auth.currentUser?.getIdToken() ?? ''
       const res = await fetch('/api/payments/create-subscription', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
