@@ -1,5 +1,5 @@
 # v7 — add /api/festivals (yearly Hindu festival calendar + special yogas)
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Request as FastAPIRequest
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -829,7 +829,6 @@ class PastLifeRequest(BaseModel):
 
 # ── Payments & Usage ─────────────────────────────────────────────────────────
 
-from fastapi import Depends, Request as FastAPIRequest
 from firebase_auth import require_auth, optional_auth
 from razorpay_payments import (
     create_subscription, verify_webhook_signature, handle_webhook_event,
