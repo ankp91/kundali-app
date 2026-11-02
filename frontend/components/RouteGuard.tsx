@@ -18,7 +18,10 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, pathname, router])
 
-  if (loading) return (
+  const isPublic = PUBLIC_PATHS.includes(pathname)
+
+  // Only block protected pages while auth is loading — public pages render immediately
+  if (loading && !isPublic) return (
     <div className="min-h-screen bg-deepblue-950 flex items-center justify-center">
       <div className="text-saffron-400 text-sm animate-pulse">Loading…</div>
     </div>
