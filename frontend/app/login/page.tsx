@@ -55,12 +55,16 @@ function LoginContent() {
     if (!pending) return
     localStorage.removeItem(REDIRECT_FLAG)
     setGoogleLoading(true)
+    const timeout = setTimeout(() => {
+      setGoogleLoading(false)
+      setError('Sign-in timed out. Please try again.')
+    }, 10_000)
     getRedirectResult(auth)
       .then(result => {
+        clearTimeout(timeout)
         if (!result?.user) setError('Sign-in did not complete. Please try again or use magic link.')
-        // if result.user exists, onAuthStateChanged fires → user effect → redirect
       })
-      .catch(e => setError(e.message || 'Sign-in failed. Please try again.'))
+      .catch(e => { clearTimeout(timeout); setError(e.message || 'Sign-in failed. Please try again.') })
       .finally(() => setGoogleLoading(false))
   }, [])
 
