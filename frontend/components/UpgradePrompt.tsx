@@ -1,5 +1,6 @@
 'use client'
 import { useLanguage } from './LanguageProvider'
+import { useAuth } from './AuthProvider'
 
 interface UpgradeInfo {
   tier: string
@@ -15,7 +16,10 @@ interface UpgradePromptProps {
 
 export default function UpgradePrompt({ info, onDismiss }: UpgradePromptProps) {
   const { lang } = useLanguage()
+  const { user } = useAuth()
   const isHi = lang === 'hi'
+
+  if (user?.isGod) return null
 
   return (
     <div className="bg-deepblue-900 border border-saffron-600/50 rounded-xl p-6 text-center space-y-4">

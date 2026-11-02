@@ -287,19 +287,25 @@ export default function PricingPage() {
               ))}
             </ul>
 
-            <button
-              onClick={() => handleSubscribe(plan.planId, isHi ? plan.nameHi : plan.name, plan.price)}
-              disabled={loading === plan.planId}
-              className={`w-full py-3 rounded-xl font-semibold text-sm transition disabled:opacity-60 ${
-                plan.highlight
-                  ? 'bg-saffron-600 hover:bg-saffron-700 text-white'
-                  : 'bg-deepblue-900 border border-saffron-600/50 hover:border-gold-400 text-saffron-400 hover:text-gold-400'
-              }`}
-            >
-              {loading === plan.planId
-                ? (isHi ? 'प्रोसेसिंग...' : 'Processing…')
-                : (isHi ? 'अभी शुरू करें' : 'Get Started')}
-            </button>
+            {user?.isGod ? (
+              <div className="w-full py-3 rounded-xl font-semibold text-sm text-center bg-gold-400/10 border border-gold-400/40 text-gold-400">
+                👑 {isHi ? 'गॉड मोड — पूर्ण पहुंच' : 'God Mode — Full Access'}
+              </div>
+            ) : (
+              <button
+                onClick={() => handleSubscribe(plan.planId, isHi ? plan.nameHi : plan.name, plan.price)}
+                disabled={loading === plan.planId}
+                className={`w-full py-3 rounded-xl font-semibold text-sm transition disabled:opacity-60 ${
+                  plan.highlight
+                    ? 'bg-saffron-600 hover:bg-saffron-700 text-white'
+                    : 'bg-deepblue-900 border border-saffron-600/50 hover:border-gold-400 text-saffron-400 hover:text-gold-400'
+                }`}
+              >
+                {loading === plan.planId
+                  ? (isHi ? 'प्रोसेसिंग...' : 'Processing…')
+                  : (isHi ? 'अभी शुरू करें' : 'Get Started')}
+              </button>
+            )}
           </div>
         ))}
       </div>

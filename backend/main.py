@@ -107,10 +107,15 @@ async def parse_chart(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail=f"Could not parse chart: {e}")
 
 
+GOD_EMAIL = 'ankit.purohit2312@gmail.com'
+
+
 def _gate(claims):
     """Check usage limit. Raises 402 if over limit, 401 if not logged in."""
     if not claims:
         raise HTTPException(status_code=401, detail="Login required")
+    if claims.get('email') == GOD_EMAIL:
+        return
     allowed, info = check_and_increment_usage(claims["uid"])
     if not allowed:
         raise HTTPException(status_code=402, detail=info)

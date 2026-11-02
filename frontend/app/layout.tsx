@@ -3,6 +3,7 @@ import './globals.css'
 import { LanguageProvider } from '@/components/LanguageProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { AuthProvider } from '@/components/AuthProvider'
+import { RouteGuard } from '@/components/RouteGuard'
 import NavBar from '@/components/NavBar'
 
 export const metadata: Metadata = {
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <LanguageProvider>
             <AuthProvider>
               <NavBar />
-              <main>{children}</main>
+              <RouteGuard>
+                <main>{children}</main>
+              </RouteGuard>
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

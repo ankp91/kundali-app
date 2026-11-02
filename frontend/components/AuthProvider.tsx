@@ -6,10 +6,13 @@ import { auth, db } from '@/lib/firebase'
 
 export type UserTier = 'free' | 'basic' | 'pro'
 
+const GOD_EMAIL = 'ankit.purohit2312@gmail.com'
+
 interface AuthUser {
-  uid:   string
-  email: string
-  tier:  UserTier
+  uid:    string
+  email:  string
+  tier:   UserTier
+  isGod:  boolean
 }
 
 interface AuthCtx {
@@ -39,7 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           })
         }
         const data = snap.exists() ? snap.data() : { tier: 'free' }
-        setUser({ uid: firebaseUser.uid, email: firebaseUser.email!, tier: data.tier || 'free' })
+        setUser({ uid: firebaseUser.uid, email: firebaseUser.email!, tier: data.tier || 'free', isGod: firebaseUser.email === GOD_EMAIL })
       } else {
         setUser(null)
       }
