@@ -39,8 +39,20 @@ function LoginContent() {
 
   // Handle Google redirect result
   useEffect(() => {
-    getRedirectResult(auth).catch(() => {})
-  }, [])
+    setGoogleLoading(true)
+    getRedirectResult(auth)
+      .then(result => {
+        if (result?.user) {
+          router.replace(redirect)
+        }
+      })
+      .catch(e => {
+        if (e.code !== 'auth/no-auth-event') {
+          setError(e.message || 'Google sign-in failed. Please try again.')
+        }
+      })
+      .finally(() => setGoogleLoading(false))
+  }, [router, redirect])
 
   // Handle magic link return
   useEffect(() => {
