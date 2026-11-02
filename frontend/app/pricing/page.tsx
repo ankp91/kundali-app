@@ -326,14 +326,10 @@ export default function PricingPage() {
       </div>
 
       {/* Trust badges */}
-      <div className="mt-10 grid grid-cols-3 gap-4 text-center text-xs text-gray-500">
+      <div className="mt-10 grid grid-cols-2 gap-4 text-center text-xs text-gray-500">
         <div>
           <div className="text-2xl mb-1">🔒</div>
           {isHi ? 'सुरक्षित भुगतान' : 'Secure Payment'}
-        </div>
-        <div>
-          <div className="text-2xl mb-1">↩</div>
-          {isHi ? '7-दिन वापसी' : '7-day Refund'}
         </div>
         <div>
           <div className="text-2xl mb-1">📱</div>

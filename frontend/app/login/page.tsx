@@ -152,7 +152,7 @@ function LoginContent() {
           )}
         </div>
 
-        <p className="text-center text-gray-300/30 text-xs mt-6">By signing in you agree to our terms.</p>
+        <p className="text-center text-gray-300/30 text-xs mt-6">No password needed. Link expires in 15 minutes.</p>
       </div>
     </div>
   )
