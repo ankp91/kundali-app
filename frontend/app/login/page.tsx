@@ -6,6 +6,7 @@ import {
   isSignInWithEmailLink,
   signInWithEmailLink,
   GoogleAuthProvider,
+  signInWithPopup,
   signInWithRedirect,
   getRedirectResult,
 } from 'firebase/auth'
@@ -113,12 +114,23 @@ function LoginContent() {
   async function handleGoogle() {
     setGoogleLoading(true)
     setError('')
+    const provider = new GoogleAuthProvider()
     try {
-      const provider = new GoogleAuthProvider()
-      await signInWithRedirect(auth, provider)
+      await signInWithPopup(auth, provider)
+      // onAuthStateChanged in AuthProvider will update user → redirect fires
     } catch (e: any) {
-      setError(e.message)
-      setGoogleLoading(false)
+      if (e.code === 'auth/popup-blocked' || e.code === 'auth/popup-closed-by-user') {
+        // Fall back to redirect (iOS in-app browsers block popups)
+        try {
+          await signInWithRedirect(auth, provider)
+        } catch (e2: any) {
+          setError(e2.message)
+          setGoogleLoading(false)
+        }
+      } else if (e.code !== 'auth/cancelled-popup-request') {
+        setError(e.message || 'Google sign-in failed.')
+        setGoogleLoading(false)
+      }
     }
   }
 
