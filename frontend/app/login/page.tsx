@@ -20,6 +20,11 @@ const ACTION_CODE_SETTINGS = {
 
 const REDIRECT_FLAG = 'google_redirect_pending'
 
+function isIOS() {
+  if (typeof navigator === 'undefined') return false
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+}
+
 function LoginContent() {
   const router       = useRouter()
   const searchParams = useSearchParams()
@@ -48,10 +53,14 @@ function LoginContent() {
     setGoogleLoading(true)
     getRedirectResult(auth)
       .then(result => {
-        if (!result?.user) setError('Google sign-in did not complete. Please try again.')
+        if (!result?.user) {
+          // iOS ITP can block cross-origin storage → result is null even after successful auth
+          // Fall back: ask them to use magic link
+          setError('Google sign-in could not complete on this browser. Please use magic link below.')
+        }
       })
       .catch(e => {
-        setError(e.message || 'Google sign-in failed.')
+        setError(e.message || 'Google sign-in failed. Please use magic link below.')
       })
       .finally(() => setGoogleLoading(false))
   }, [])
@@ -115,13 +124,25 @@ function LoginContent() {
     setGoogleLoading(true)
     setError('')
     const provider = new GoogleAuthProvider()
+
+    if (isIOS()) {
+      // iOS Safari: popup tab never passes result back — use redirect always
+      sessionStorage.setItem(REDIRECT_FLAG, '1')
+      try {
+        await signInWithRedirect(auth, provider)
+      } catch (e: any) {
+        sessionStorage.removeItem(REDIRECT_FLAG)
+        setError(e.message || 'Google sign-in failed.')
+        setGoogleLoading(false)
+      }
+      return
+    }
+
+    // Desktop / Android: popup is reliable
     try {
-      // Popup works on desktop + iOS Safari when triggered by user tap
       await signInWithPopup(auth, provider)
-      // Auth state update in AuthProvider → user effect → redirect
     } catch (e: any) {
       if (e.code === 'auth/popup-blocked') {
-        // Safari blocks popups not triggered directly; fall back to redirect
         sessionStorage.setItem(REDIRECT_FLAG, '1')
         try {
           await signInWithRedirect(auth, provider)
