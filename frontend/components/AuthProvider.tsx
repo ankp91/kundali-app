@@ -29,24 +29,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      if (firebaseUser) {
-        // Get or create user doc in Firestore
-        const ref  = doc(db, 'users', firebaseUser.uid)
-        const snap = await getDoc(ref)
-        if (!snap.exists()) {
-          await setDoc(ref, {
-            email:      firebaseUser.email,
-            tier:       'free',
-            usage:      { month: '', count: 0 },
-            created_at: serverTimestamp(),
-          })
+      try {
+        if (firebaseUser) {
+          const ref  = doc(db, 'users', firebaseUser.uid)
+          const snap = await getDoc(ref)
+          if (!snap.exists()) {
+            await setDoc(ref, {
+              email:      firebaseUser.email,
+              tier:       'free',
+              usage:      { month: '', count: 0 },
+              created_at: serverTimestamp(),
+            })
+          }
+          const data = snap.exists() ? snap.data() : { tier: 'free' }
+          setUser({ uid: firebaseUser.uid, email: firebaseUser.email!, tier: data.tier || 'free', isGod: firebaseUser.email === GOD_EMAIL })
+        } else {
+          setUser(null)
         }
-        const data = snap.exists() ? snap.data() : { tier: 'free' }
-        setUser({ uid: firebaseUser.uid, email: firebaseUser.email!, tier: data.tier || 'free', isGod: firebaseUser.email === GOD_EMAIL })
-      } else {
-        setUser(null)
+      } catch {
+        // Firestore unavailable — still mark user as authenticated with free tier
+        if (firebaseUser) {
+          setUser({ uid: firebaseUser.uid, email: firebaseUser.email!, tier: 'free', isGod: firebaseUser.email === GOD_EMAIL })
+        } else {
+          setUser(null)
+        }
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     })
     return unsub
   }, [])
