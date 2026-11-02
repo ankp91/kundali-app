@@ -20,6 +20,11 @@ from ai_agent import (
     stream_transits, stream_remedies, stream_varshaphal,
     stream_prasna, stream_shadbala_insight,
 )
+from firebase_auth import require_auth, optional_auth
+from razorpay_payments import (
+    create_subscription, verify_webhook_signature, handle_webhook_event,
+    check_and_increment_usage, get_usage, RAZORPAY_KEY_ID,
+)
 
 app = FastAPI(title="Kundali API")
 
@@ -828,13 +833,6 @@ class PastLifeRequest(BaseModel):
 
 
 # ── Payments & Usage ─────────────────────────────────────────────────────────
-
-from firebase_auth import require_auth, optional_auth
-from razorpay_payments import (
-    create_subscription, verify_webhook_signature, handle_webhook_event,
-    check_and_increment_usage, get_usage, RAZORPAY_KEY_ID,
-)
-
 
 class SubscriptionRequest(BaseModel):
     plan_id: str
