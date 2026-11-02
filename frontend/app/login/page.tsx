@@ -19,6 +19,11 @@ const ACTION_CODE_SETTINGS = {
 }
 
 const REDIRECT_FLAG = 'google_redirect_pending'
+// Use localStorage (not sessionStorage) — sessionStorage is wiped on iOS when
+// navigating cross-origin (to Google and back), localStorage survives.
+const setRedirectFlag  = () => localStorage.setItem(REDIRECT_FLAG, '1')
+const getRedirectFlag  = () => localStorage.getItem(REDIRECT_FLAG)
+const clearRedirectFlag = () => localStorage.removeItem(REDIRECT_FLAG)
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false
@@ -47,20 +52,18 @@ function LoginContent() {
 
   // Handle Google redirect result — only runs if we actually triggered a redirect
   useEffect(() => {
-    const pending = sessionStorage.getItem(REDIRECT_FLAG)
+    const pending = getRedirectFlag()
     if (!pending) return
-    sessionStorage.removeItem(REDIRECT_FLAG)
+    clearRedirectFlag()
     setGoogleLoading(true)
     getRedirectResult(auth)
       .then(result => {
         if (!result?.user) {
-          // iOS ITP can block cross-origin storage → result is null even after successful auth
-          // Fall back: ask them to use magic link
-          setError('Google sign-in could not complete on this browser. Please use magic link below.')
+          setError('Google sign-in did not complete. Please try again.')
         }
       })
       .catch(e => {
-        setError(e.message || 'Google sign-in failed. Please use magic link below.')
+        setError(e.message || 'Google sign-in failed. Please try again.')
       })
       .finally(() => setGoogleLoading(false))
   }, [])
@@ -127,11 +130,11 @@ function LoginContent() {
 
     if (isIOS()) {
       // iOS Safari: popup tab never passes result back — use redirect always
-      sessionStorage.setItem(REDIRECT_FLAG, '1')
+      setRedirectFlag()
       try {
         await signInWithRedirect(auth, provider)
       } catch (e: any) {
-        sessionStorage.removeItem(REDIRECT_FLAG)
+        clearRedirectFlag()
         setError(e.message || 'Google sign-in failed.')
         setGoogleLoading(false)
       }
@@ -143,11 +146,11 @@ function LoginContent() {
       await signInWithPopup(auth, provider)
     } catch (e: any) {
       if (e.code === 'auth/popup-blocked') {
-        sessionStorage.setItem(REDIRECT_FLAG, '1')
+        setRedirectFlag()
         try {
           await signInWithRedirect(auth, provider)
         } catch (e2: any) {
-          sessionStorage.removeItem(REDIRECT_FLAG)
+          clearRedirectFlag()
           setError(e2.message)
           setGoogleLoading(false)
         }
