@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import {
   sendSignInLinkToEmail,
@@ -14,16 +14,11 @@ import { auth } from '@/lib/firebase'
 import { useAuth } from '@/components/AuthProvider'
 
 const ACTION_CODE_SETTINGS = {
-  url:             (process.env.NEXT_PUBLIC_APP_URL || '') + '/login',
+  url:             (process.env.NEXT_PUBLIC_APP_URL || 'https://kundali-app-iota.vercel.app') + '/login',
   handleCodeInApp: true,
 }
 
 const REDIRECT_FLAG = 'google_redirect_pending'
-// Use localStorage (not sessionStorage) — sessionStorage is wiped on iOS when
-// navigating cross-origin (to Google and back), localStorage survives.
-const setRedirectFlag  = () => localStorage.setItem(REDIRECT_FLAG, '1')
-const getRedirectFlag  = () => localStorage.getItem(REDIRECT_FLAG)
-const clearRedirectFlag = () => localStorage.removeItem(REDIRECT_FLAG)
 
 function isIOS() {
   if (typeof navigator === 'undefined') return false
@@ -42,29 +37,30 @@ function LoginContent() {
   const [confirming, setConfirming]       = useState(false)
   const [needsEmail, setNeedsEmail]       = useState(false)
   const [linkUrl, setLinkUrl]             = useState('')
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const redirect = searchParams.get('redirect') || '/'
 
   // Redirect if already signed in
   useEffect(() => {
-    if (user) router.replace(redirect)
+    if (user) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+      router.replace(redirect)
+    }
   }, [user, router, redirect])
 
-  // Handle Google redirect result — only runs if we actually triggered a redirect
+  // Handle Google redirect result on page load (iOS redirect flow)
   useEffect(() => {
-    const pending = getRedirectFlag()
+    const pending = localStorage.getItem(REDIRECT_FLAG)
     if (!pending) return
-    clearRedirectFlag()
+    localStorage.removeItem(REDIRECT_FLAG)
     setGoogleLoading(true)
     getRedirectResult(auth)
       .then(result => {
-        if (!result?.user) {
-          setError('Google sign-in did not complete. Please try again.')
-        }
+        if (!result?.user) setError('Sign-in did not complete. Please try again or use magic link.')
+        // if result.user exists, onAuthStateChanged fires → user effect → redirect
       })
-      .catch(e => {
-        setError(e.message || 'Google sign-in failed. Please try again.')
-      })
+      .catch(e => setError(e.message || 'Sign-in failed. Please try again.'))
       .finally(() => setGoogleLoading(false))
   }, [])
 
@@ -80,21 +76,21 @@ function LoginContent() {
       return
     }
     signInWithEmailLink(auth, savedEmail, window.location.href)
-      .then(() => {
-        localStorage.removeItem('emailForSignIn')
-        router.replace(redirect)
-      })
-      .catch(e => {
-        setError(e.message)
-        setConfirming(false)
-      })
+      .then(() => { localStorage.removeItem('emailForSignIn'); router.replace(redirect) })
+      .catch(e => { setError(e.message); setConfirming(false) })
   }, [router, redirect])
+
+  function startGoogleTimeout() {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      setGoogleLoading(false)
+      setError('Sign-in timed out. If a popup was blocked by your browser, allow popups for this site and try again.')
+    }, 60_000)
+  }
 
   async function handleConfirmEmail(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       await signInWithEmailLink(auth, email, linkUrl)
       localStorage.removeItem('emailForSignIn')
@@ -102,55 +98,49 @@ function LoginContent() {
     } catch {
       setError('Invalid or expired link. Please request a new one.')
       setNeedsEmail(false)
-    } finally {
-      setLoading(false)
-    }
+    } finally { setLoading(false) }
   }
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
-    setLoading(true)
-    setError('')
+    setLoading(true); setError('')
     try {
       await sendSignInLinkToEmail(auth, email, ACTION_CODE_SETTINGS)
       localStorage.setItem('emailForSignIn', email)
       setSent(true)
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (e: any) { setError(e.message) }
+    finally { setLoading(false) }
   }
 
   async function handleGoogle() {
-    setGoogleLoading(true)
-    setError('')
+    setGoogleLoading(true); setError('')
     const provider = new GoogleAuthProvider()
 
     if (isIOS()) {
-      // iOS Safari: popup tab never passes result back — use redirect always
-      setRedirectFlag()
-      try {
-        await signInWithRedirect(auth, provider)
-      } catch (e: any) {
-        clearRedirectFlag()
+      // iOS Safari: popups open in new tab and never send result back — use redirect
+      localStorage.setItem(REDIRECT_FLAG, '1')
+      try { await signInWithRedirect(auth, provider) }
+      catch (e: any) {
+        localStorage.removeItem(REDIRECT_FLAG)
         setError(e.message || 'Google sign-in failed.')
         setGoogleLoading(false)
       }
       return
     }
 
-    // Desktop / Android: popup is reliable
+    // Desktop / Android: popup
+    startGoogleTimeout()
     try {
       await signInWithPopup(auth, provider)
+      // onAuthStateChanged fires → user effect redirects
     } catch (e: any) {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
       if (e.code === 'auth/popup-blocked') {
-        setRedirectFlag()
-        try {
-          await signInWithRedirect(auth, provider)
-        } catch (e2: any) {
-          clearRedirectFlag()
+        // Fall back to redirect
+        localStorage.setItem(REDIRECT_FLAG, '1')
+        try { await signInWithRedirect(auth, provider) }
+        catch (e2: any) {
+          localStorage.removeItem(REDIRECT_FLAG)
           setError(e2.message)
           setGoogleLoading(false)
         }
@@ -183,22 +173,21 @@ function LoginContent() {
 
         <div className="bg-deepblue-900 rounded-2xl p-6 border border-saffron-700/20 space-y-4">
 
-          {/* Google Sign-In */}
           <button
             onClick={handleGoogle}
             disabled={googleLoading}
-            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-gray-800 font-semibold py-2.5 rounded-lg text-sm transition"
+            className="w-full flex items-center justify-center gap-3 bg-white hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed text-gray-800 font-semibold py-2.5 rounded-lg text-sm transition"
           >
-            {googleLoading ? (
-              <span className="w-4 h-4 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 18 18">
-                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
-                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
-              </svg>
-            )}
+            {googleLoading
+              ? <span className="w-4 h-4 border-2 border-gray-400 border-t-gray-700 rounded-full animate-spin" />
+              : (
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                  <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+                </svg>
+              )}
             {googleLoading ? 'Signing in…' : 'Continue with Google'}
           </button>
 
@@ -211,11 +200,9 @@ function LoginContent() {
           {needsEmail ? (
             <form onSubmit={handleConfirmEmail} className="space-y-3">
               <p className="text-xs text-saffron-400/80 text-center">Enter the email you used to request the link</p>
-              <input
-                type="email" value={email} onChange={e => setEmail(e.target.value)}
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@example.com" required autoFocus
-                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2.5 text-gray-200 text-sm focus:border-gold-400 focus:outline-none"
-              />
+                className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2.5 text-gray-200 text-sm focus:border-gold-400 focus:outline-none" />
               {error && <p className="text-red-400 text-xs">{error}</p>}
               <button type="submit" disabled={loading}
                 className="w-full bg-saffron-600 hover:bg-saffron-500 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg text-sm transition">
@@ -226,9 +213,7 @@ function LoginContent() {
             <div className="text-center py-2">
               <div className="text-3xl mb-3">📬</div>
               <p className="text-gold-400 font-semibold mb-2">Check your inbox</p>
-              <p className="text-gray-300/70 text-sm">
-                Sent to <span className="text-saffron-400">{email}</span>
-              </p>
+              <p className="text-gray-300/70 text-sm">Sent to <span className="text-saffron-400">{email}</span></p>
               <p className="text-gray-300/40 text-xs mt-2">Click the link in the email to sign in.</p>
               <button onClick={() => { setSent(false); setEmail('') }}
                 className="mt-4 text-xs text-saffron-400/60 hover:text-saffron-400 transition">
@@ -239,11 +224,9 @@ function LoginContent() {
             <form onSubmit={handleSend} className="space-y-3">
               <div>
                 <label className="block text-xs text-saffron-400/70 mb-1">Email address</label>
-                <input
-                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="you@example.com" required autoFocus
-                  className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2.5 text-gray-200 text-sm focus:border-gold-400 focus:outline-none"
-                />
+                  className="w-full bg-deepblue-950 border border-saffron-700/40 rounded-lg px-3 py-2.5 text-gray-200 text-sm focus:border-gold-400 focus:outline-none" />
               </div>
               {error && <p className="text-red-400 text-xs">{error}</p>}
               <button type="submit" disabled={loading}
@@ -254,9 +237,7 @@ function LoginContent() {
           )}
         </div>
 
-        <p className="text-center text-gray-300/30 text-xs mt-6">
-          By signing in you agree to our terms.
-        </p>
+        <p className="text-center text-gray-300/30 text-xs mt-6">By signing in you agree to our terms.</p>
       </div>
     </div>
   )
@@ -264,7 +245,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-deepblue-950 flex items-center justify-center"><div className="text-saffron-400 animate-pulse">🔱</div></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-deepblue-950 flex items-center justify-center"><div className="text-saffron-400 animate-pulse text-4xl">🔱</div></div>}>
       <LoginContent />
     </Suspense>
   )
