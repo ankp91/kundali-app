@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
-import os
+import os, secrets, time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -82,6 +82,67 @@ class MatchInput(BaseModel):
     birth_date2: str
     birth_time2: str
     birth_place2: str
+
+
+# ── Auth session store (in-memory, TTL 10 min) ──────────────────────────────
+# {sessionId: {email, status: pending|complete, custom_token, expires_at}}
+_auth_sessions: dict = {}
+
+def _clean_sessions():
+    now = time.time()
+    expired = [k for k, v in _auth_sessions.items() if v['expires_at'] < now]
+    for k in expired:
+        del _auth_sessions[k]
+
+
+class SessionCreateRequest(BaseModel):
+    email: str
+
+class SessionCompleteRequest(BaseModel):
+    session_id: str
+    id_token: str
+
+
+@app.post("/api/auth/create-session")
+def create_auth_session(req: SessionCreateRequest):
+    _clean_sessions()
+    session_id = secrets.token_urlsafe(32)
+    _auth_sessions[session_id] = {
+        'email': req.email,
+        'status': 'pending',
+        'custom_token': None,
+        'expires_at': time.time() + 600,  # 10 min
+    }
+    return {"session_id": session_id}
+
+
+@app.post("/api/auth/complete-session")
+def complete_auth_session(req: SessionCompleteRequest):
+    from firebase_auth import verify_token
+    from firebase_admin import auth as fb_auth
+
+    session = _auth_sessions.get(req.session_id)
+    if not session or session['expires_at'] < time.time():
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+
+    claims = verify_token(req.id_token)
+    custom_token = fb_auth.create_custom_token(claims['uid']).decode('utf-8')
+
+    session['status'] = 'complete'
+    session['custom_token'] = custom_token
+    return {"ok": True}
+
+
+@app.get("/api/auth/session-status/{session_id}")
+def get_session_status(session_id: str):
+    session = _auth_sessions.get(session_id)
+    if not session or session['expires_at'] < time.time():
+        raise HTTPException(status_code=404, detail="Session not found or expired")
+    if session['status'] == 'complete':
+        token = session['custom_token']
+        del _auth_sessions[session_id]
+        return {"status": "complete", "custom_token": token}
+    return {"status": "pending"}
 
 
 @app.get("/health")
