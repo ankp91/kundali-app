@@ -1,0 +1,174 @@
+name: Build Android + iOS
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+
+  # ── Android ──────────────────────────────────────────────────────────────
+  android:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_KEYSTORE_BASE64:  ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_STORE_PASSWORD:   ${{ secrets.ANDROID_STORE_PASSWORD }}
+      ANDROID_KEY_ALIAS:        ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD:     ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Dummy webDir
+        working-directory: frontend
+        run: mkdir -p out && echo '{}' > out/index.html
+
+      - name: Add + sync Android
+        working-directory: frontend
+        run: npx cap add android && npx cap sync android
+
+      - name: Decode keystore
+        working-directory: frontend/android
+        run: echo "${ANDROID_KEYSTORE_BASE64}" | base64 --decode > aadya.keystore
+
+      - name: Build AAB
+        working-directory: frontend/android
+        run: |
+          ./gradlew bundleRelease \
+            "-Pandroid.injected.signing.store.file=$(pwd)/aadya.keystore" \
+            "-Pandroid.injected.signing.store.password=${ANDROID_STORE_PASSWORD}" \
+            "-Pandroid.injected.signing.key.alias=${ANDROID_KEY_ALIAS}" \
+            "-Pandroid.injected.signing.key.password=${ANDROID_KEY_PASSWORD}"
+
+      - name: Build APK
+        working-directory: frontend/android
+        run: |
+          ./gradlew assembleRelease \
+            "-Pandroid.injected.signing.store.file=$(pwd)/aadya.keystore" \
+            "-Pandroid.injected.signing.store.password=${ANDROID_STORE_PASSWORD}" \
+            "-Pandroid.injected.signing.key.alias=${ANDROID_KEY_ALIAS}" \
+            "-Pandroid.injected.signing.key.password=${ANDROID_KEY_PASSWORD}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aadya-android-aab
+          path: frontend/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aadya-android-apk
+          path: frontend/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+  # ── iOS ──────────────────────────────────────────────────────────────────
+  ios:
+    runs-on: macos-latest
+    env:
+      IOS_CERTIFICATE_BASE64:           ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+      IOS_CERTIFICATE_PASSWORD:         ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+      IOS_PROVISIONING_PROFILE_BASE64:  ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+      APP_STORE_CONNECT_API_KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_API_KEY_BASE64 }}
+      ASC_API_KEY_ID:                   ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+      ASC_ISSUER_ID:                    ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Dummy webDir
+        working-directory: frontend
+        run: mkdir -p out && echo '{}' > out/index.html
+
+      - name: Add + sync iOS
+        working-directory: frontend
+        run: npx cap add ios && npx cap sync ios
+
+      - name: Import certificate
+        run: |
+          echo "${IOS_CERTIFICATE_BASE64}" | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain \
+            -P "${IOS_CERTIFICATE_PASSWORD}" -T /usr/bin/codesign
+          security list-keychains -s build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain
+          rm certificate.p12
+
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "${IOS_PROVISIONING_PROFILE_BASE64}" | base64 --decode \
+            > ~/Library/MobileDevice/Provisioning\ Profiles/aadya.mobileprovision
+
+      - name: Build archive
+        working-directory: frontend/ios/App
+        run: |
+          xcodebuild archive \
+            -scheme App \
+            -configuration Release \
+            -archivePath "${RUNNER_TEMP}/Aadya.xcarchive" \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="Aadya Distribution" \
+            CODE_SIGN_IDENTITY="iPhone Distribution"
+
+      - name: Export IPA
+        run: |
+          cat > /tmp/export_options.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store</string>
+            <key>uploadBitcode</key><false/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive \
+            -archivePath "${RUNNER_TEMP}/Aadya.xcarchive" \
+            -exportPath "${RUNNER_TEMP}/ipa" \
+            -exportOptionsPlist /tmp/export_options.plist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: aadya-ios-ipa
+          path: ${{ runner.temp }}/ipa/App.ipa
+          retention-days: 30
+
+      - name: Upload to TestFlight
+        if: ${{ env.ASC_API_KEY_ID != '' }}
+        run: |
+          echo "${APP_STORE_CONNECT_API_KEY_BASE64}" | base64 --decode > /tmp/api_key.p8
+          xcrun altool --upload-app \
+            --type ios \
+            --file "${RUNNER_TEMP}/ipa/App.ipa" \
+            --apiKey "${ASC_API_KEY_ID}" \
+            --apiIssuer "${ASC_ISSUER_ID}" \
+            --verbose
