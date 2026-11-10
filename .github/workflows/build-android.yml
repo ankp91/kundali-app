@@ -1,0 +1,82 @@
+name: Build Android APK/AAB
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    env:
+      ANDROID_STORE_PASSWORD: ${{ secrets.ANDROID_STORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Install frontend deps
+        working-directory: frontend
+        run: npm ci
+
+      - name: Create dummy webDir
+        working-directory: frontend
+        run: mkdir -p out && echo '{}' > out/index.html
+
+      - name: Add Android platform
+        working-directory: frontend
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        working-directory: frontend
+        run: npx cap sync android
+
+      - name: Decode keystore
+        working-directory: frontend/android
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > aadya.keystore
+
+      - name: Build release AAB
+        working-directory: frontend/android
+        run: |
+          ./gradlew bundleRelease \
+            "-Pandroid.injected.signing.store.file=$(pwd)/aadya.keystore" \
+            "-Pandroid.injected.signing.store.password=${ANDROID_STORE_PASSWORD}" \
+            "-Pandroid.injected.signing.key.alias=${ANDROID_KEY_ALIAS}" \
+            "-Pandroid.injected.signing.key.password=${ANDROID_KEY_PASSWORD}"
+
+      - name: Build release APK
+        working-directory: frontend/android
+        run: |
+          ./gradlew assembleRelease \
+            "-Pandroid.injected.signing.store.file=$(pwd)/aadya.keystore" \
+            "-Pandroid.injected.signing.store.password=${ANDROID_STORE_PASSWORD}" \
+            "-Pandroid.injected.signing.key.alias=${ANDROID_KEY_ALIAS}" \
+            "-Pandroid.injected.signing.key.password=${ANDROID_KEY_PASSWORD}"
+
+      - name: Upload AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: aadya-release-aab
+          path: frontend/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: aadya-release-apk
+          path: frontend/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
